@@ -15,9 +15,6 @@ commands, and recovered by a scheduled sweeper.
 
 ![Task system design: Django commits task state to SQL, publishes to SQS after commit, and Lambda workers claim and finalize in SQL. EventBridge Scheduler invokes a sweeper to recover expired leases and republish due work.](docs/_static/task-system-design.svg)
 
-The diagram uses official [AWS Architecture Icons](https://aws.amazon.com/architecture/icons/).
-The [editable SVG and icon attribution](docs/_static/task-system-design.md) live
-in this repository.
 
 1. **Accept work.** The producer inserts a task record in SQL. When business data
    and task records share a database alias and transaction, rollback removes both.
