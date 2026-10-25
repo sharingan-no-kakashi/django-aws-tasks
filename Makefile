@@ -2,6 +2,7 @@
 
 UV ?= uv
 PYTEST_ARGS ?=
+TEST_DATABASE ?= postgres
 PYTHON_PATHS := src tests scripts docs/conf.py
 
 .PHONY: help setup sync check lint format format-check traceability typecheck \
@@ -12,7 +13,7 @@ help: ## Show available commands
 
 setup: sync hooks ## Install locked development dependencies and Git hooks
 
-hooks: ## Install the Conventional Commit message hook
+hooks: ## Install Conventional Commit and pre-push quality hooks
 	$(UV) run --locked pre-commit install
 
 sync: ## Synchronize dependencies from uv.lock
@@ -50,7 +51,7 @@ test-e2e: test-postgres ## Run PostgreSQL integration and the consumer browser j
 	RUN_BROWSER_TESTS=1 $(UV) run --directory ../django-aws-tasks-example --locked --group browser pytest sample_app/tests -m browser $(PYTEST_ARGS)
 
 test-compatibility: ## Run shared contracts on TEST_DATABASE (default: postgres)
-	$(UV) run --locked pytest tests/compatibility --ds=tests.compatibility_settings $(PYTEST_ARGS)
+	TEST_DATABASE=$(TEST_DATABASE) $(UV) run --locked --extra $(TEST_DATABASE) pytest tests/compatibility --ds=tests.compatibility_settings $(PYTEST_ARGS)
 
 build: ## Build wheel and source distributions into dist/
 	$(UV) build

@@ -98,13 +98,17 @@ each backed by its own SQS queue and Lambda function. The route manifest is
 produced by Terraform and injected into every producer and worker. Each worker
 validates its own identity against the manifest before claiming work.
 
-.. code-block:: text
+.. figure:: _static/task-system-design.svg
+   :alt: Django commits tasks to SQL, publishes to SQS after commit, and Lambda workers claim and finalize in SQL; a scheduled sweeper recovers work.
+   :width: 100%
 
-   Producer ──> SQS (per route) ──> Lambda workers
-                      ▲                    │
-                      │                    ▼
-              EventBridge Scheduler ──> Sweeper ──> SQL database
-                       (reconciliation)          (durable state)
+   SQL owns durable state; SQS delivers task identities. EventBridge Scheduler
+   invokes the recovery sweeper independently of producer traffic.
+
+The diagram uses official `AWS Architecture Icons
+<https://aws.amazon.com/architecture/icons/>`_. The self-contained SVG is the
+editable source; icon provenance is recorded alongside it in
+``_static/task-system-design.md``.
 
 The repository's ``docs/implementation-spec.md`` records the frozen first-release
 contract, scope, and requirement-ID scheme. The optional workflow layer described

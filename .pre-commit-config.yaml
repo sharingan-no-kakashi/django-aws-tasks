@@ -1,4 +1,4 @@
-default_install_hook_types: [commit-msg]
+default_install_hook_types: [commit-msg, pre-push]
 
 repos:
   - repo: local
@@ -8,3 +8,24 @@ repos:
         entry: bash scripts/check_commit_message.sh
         language: system
         stages: [commit-msg]
+      - id: project-checks
+        name: Check formatting, lint, types, and traceability
+        entry: make check
+        language: system
+        stages: [pre-push]
+        pass_filenames: false
+        always_run: true
+      - id: unit-tests
+        name: Run unit tests
+        entry: make test-unit
+        language: system
+        stages: [pre-push]
+        pass_filenames: false
+        always_run: true
+      - id: dependency-audit
+        name: Audit locked dependencies
+        entry: make audit
+        language: system
+        stages: [pre-push]
+        pass_filenames: false
+        always_run: true

@@ -1,0 +1,113 @@
+name: Database compatibility matrix
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compatibility:
+    name: Python ${{ matrix.python }} / ${{ matrix.database.label }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        python: ["3.12", "3.13", "3.14"]
+        database:
+          - label: PostgreSQL 15
+            engine: postgres
+            image: postgres:15
+            port: "5432"
+            user: postgres
+            name: django_tasks_aws_test
+            health: pg_isready -U postgres
+            extra: postgres
+          - label: PostgreSQL 16
+            engine: postgres
+            image: postgres:16
+            port: "5432"
+            user: postgres
+            name: django_tasks_aws_test
+            health: pg_isready -U postgres
+            extra: postgres
+          - label: MySQL 8.4
+            engine: mysql
+            image: mysql:8.4
+            port: "3306"
+            user: root
+            name: mysql
+            health: mysqladmin ping -h 127.0.0.1 -prootpassword
+            extra: mysql
+          - label: MariaDB 10.6
+            engine: mariadb
+            image: mariadb:10.6
+            port: "3306"
+            user: root
+            name: mysql
+            health: healthcheck.sh --connect --innodb_initialized
+            extra: mariadb
+          - label: Oracle 23
+            engine: oracle
+            image: gvenzl/oracle-free:23-slim-faststart
+            port: "1521"
+            user: system
+            name: 127.0.0.1:1521/FREEPDB1
+            health: healthcheck.sh
+            extra: oracle
+    services:
+      database:
+        image: ${{ matrix.database.image }}
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: rootpassword
+          POSTGRES_DB: django_tasks_aws_test
+          MYSQL_ROOT_PASSWORD: rootpassword
+          MYSQL_ROOT_HOST: "%"
+          MARIADB_ROOT_PASSWORD: rootpassword
+          MARIADB_ROOT_HOST: "%"
+          ORACLE_PASSWORD: rootpassword
+          TZ: UTC
+        ports:
+          - ${{ matrix.database.port }}:${{ matrix.database.port }}
+        options: >-
+          --health-cmd "${{ matrix.database.health }}"
+          --health-interval 10s --health-timeout 5s --health-retries 30
+    env:
+      TEST_DATABASE: ${{ matrix.database.engine }}
+      TEST_DB_NAME: ${{ matrix.database.name }}
+      TEST_DB_USER: ${{ matrix.database.user }}
+      TEST_DB_PASSWORD: rootpassword
+      TEST_DB_HOST: 127.0.0.1
+      TEST_DB_PORT: ${{ matrix.database.port }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+        with:
+          python-version: ${{ matrix.python }}
+          enable-cache: true
+      - name: Install MySQL-family driver build dependencies
+        if: matrix.database.engine == 'mysql' || matrix.database.engine == 'mariadb'
+        run: sudo apt-get update && sudo apt-get install -y libmariadb-dev libmariadb-dev-compat pkg-config
+      - run: uv sync --locked --group dev --extra ${{ matrix.database.extra }}
+      - name: Select Oracle Easy Connect DSN
+        if: matrix.database.engine == 'oracle'
+        run: |
+          echo 'TEST_DB_HOST=' >> "$GITHUB_ENV"
+          echo 'TEST_DB_PORT=' >> "$GITHUB_ENV"
+      - run: make test-unit PYTEST_ARGS="-ra --junitxml=artifacts/unit.xml"
+        env:
+          UV_NO_SYNC: "1"
+      - run: make test-compatibility PYTEST_ARGS="-ra --junitxml=artifacts/compatibility.xml"
+        env:
+          UV_NO_SYNC: "1"
+      - name: Database logs
+        if: failure()
+        run: docker logs "${{ job.services.database.id }}"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: compatibility-${{ matrix.python }}-${{ matrix.database.engine }}-${{ matrix.database.port }}-${{ strategy.job-index }}
+          path: artifacts/*.xml
