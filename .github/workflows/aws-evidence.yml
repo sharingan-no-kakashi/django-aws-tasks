@@ -1,0 +1,156 @@
+name: Disposable AWS evidence
+on:
+  workflow_dispatch:
+    inputs:
+      region:
+        description: AWS region approved for disposable resources
+        required: true
+      role_arn:
+        description: Approved OIDC deployment role
+        required: true
+      capacity:
+        type: boolean
+        description: Run capacity and cost acceptance after the fault suite
+        default: false
+  workflow_call:
+    inputs:
+      region:
+        type: string
+        required: true
+      role_arn:
+        type: string
+        required: true
+      candidate_artifact:
+        type: string
+        default: ""
+      capacity:
+        type: boolean
+        default: false
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  deployed:
+    if: inputs.role_arn != '' || vars.AWS_VERIFICATION_ROLE != ''
+    runs-on: ubuntu-latest
+    environment: aws-verification
+    timeout-minutes: 360
+    env:
+      AWS_PROFILE: verification
+      AWS_REGION: ${{ inputs.region || vars.AWS_VERIFICATION_REGION }}
+      REQUIRE_AWS: "1"
+      TASK_AWS_WORKSPACE: ${{ github.workspace }}/.aws-runs/current
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: ./.github/actions/checkout-example
+        env:
+          EXAMPLE_REPOSITORY: ${{ vars.EXAMPLE_REPOSITORY || 'sharingan-no-kakashi/django-aws-tasks-example' }}
+          EXAMPLE_REF: ${{ vars.EXAMPLE_REF || 'main' }}
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+        with:
+          terraform_version: "1.15.4"
+          terraform_wrapper: false
+      - uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: ${{ inputs.role_arn || vars.AWS_VERIFICATION_ROLE }}
+          aws-region: ${{ inputs.region || vars.AWS_VERIFICATION_REGION }}
+      - name: Configure named profile using environment credentials
+        run: |
+          mkdir -p ~/.aws
+          python - <<'PYTHON'
+          import os
+          from pathlib import Path
+          destination = Path.home() / ".aws/credentials"
+          fields = {"aws_access_key_id": os.environ["AWS_ACCESS_KEY_ID"],
+                    "aws_secret_access_key": os.environ["AWS_SECRET_ACCESS_KEY"],
+                    "aws_session_token": os.environ["AWS_SESSION_TOKEN"]}
+          destination.write_text("[verification]\n" + "".join(f"{key} = {value}\n" for key, value in fields.items()))
+          destination.chmod(0o600)
+          PYTHON
+          echo "TASK_RUN_ID=$(python -c 'import uuid; print(uuid.uuid4())')" >> "$GITHUB_ENV"
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        if: inputs.candidate_artifact != ''
+        with:
+          name: ${{ inputs.candidate_artifact }}
+          path: candidate
+      - name: Select the previously built release artifacts
+        if: inputs.candidate_artifact != ''
+        run: echo "TASK_CANDIDATE_DIST=$GITHUB_WORKSPACE/candidate/dist" >> "$GITHUB_ENV"
+      - run: uv sync --locked --all-groups
+      - run: uv run playwright install --with-deps chromium
+      - name: Prepare bootstrap plan
+        run: uv run --directory ../django-aws-tasks-example python -m example_tools.deploy_sample bootstrap-plan --profile verification --region "$AWS_REGION" --run-id "$TASK_RUN_ID" --directory "$TASK_AWS_WORKSPACE"
+      - name: Apply bootstrap
+        run: uv run --directory ../django-aws-tasks-example python -m example_tools.deploy_sample bootstrap-apply --profile verification --region "$AWS_REGION" --run-id "$TASK_RUN_ID" --directory "$TASK_AWS_WORKSPACE"
+      - name: Build immutable image
+        run: uv run --directory ../django-aws-tasks-example python -m example_tools.deploy_sample image --profile verification --region "$AWS_REGION" --run-id "$TASK_RUN_ID" --directory "$TASK_AWS_WORKSPACE"
+      - name: Build the additive compatibility image from the same candidate
+        run: uv run --directory ../django-aws-tasks-example python -m example_tools.deploy_sample image --release-phase compatible --profile verification --region "$AWS_REGION" --run-id "$TASK_RUN_ID" --directory "$TASK_AWS_WORKSPACE"
+      - name: Plan task deployment
+        run: uv run --directory ../django-aws-tasks-example python -m example_tools.deploy_sample deploy-plan --enable-faults --profile verification --region "$AWS_REGION" --run-id "$TASK_RUN_ID" --directory "$TASK_AWS_WORKSPACE"
+      - name: Apply task deployment
+        run: uv run --directory ../django-aws-tasks-example python -m example_tools.deploy_sample deploy-apply --profile verification --region "$AWS_REGION" --run-id "$TASK_RUN_ID" --directory "$TASK_AWS_WORKSPACE"
+      - name: Migrate through private adapter
+        run: uv run --directory ../django-aws-tasks-example python -m example_tools.deploy_sample migrate --profile verification --region "$AWS_REGION" --run-id "$TASK_RUN_ID" --directory "$TASK_AWS_WORKSPACE"
+      - name: Enable recovery schedule
+        run: |
+          uv run --directory ../django-aws-tasks-example python -m example_tools.deploy_sample enable-plan --enable-faults --profile verification --region "$AWS_REGION" --run-id "$TASK_RUN_ID" --directory "$TASK_AWS_WORKSPACE"
+          uv run --directory ../django-aws-tasks-example python -m example_tools.deploy_sample deploy-apply --profile verification --region "$AWS_REGION" --run-id "$TASK_RUN_ID" --directory "$TASK_AWS_WORKSPACE"
+      - run: uv run pytest tests/e2e --ignore=tests/e2e/test_cleanup.py --ignore=tests/e2e/test_capacity_evidence.py -ra --junitxml=artifacts/aws.xml
+      - name: Collect regional usage and price inputs
+        if: inputs.capacity
+        env:
+          COST_INPUTS: ${{ vars.AWS_CAPACITY_COST_INPUTS }}
+        run: |
+          python - <<'PYTHON'
+          import json, os
+          from pathlib import Path
+          document = json.loads(os.environ["COST_INPUTS"])
+          Path("artifacts/cost-inputs.json").write_text(json.dumps(document))
+          PYTHON
+      - name: Capacity and cost experiments
+        if: inputs.capacity
+        run: uv run --directory ../django-aws-tasks-example python -m example_tools.capacity_run --profile verification --region "$AWS_REGION" --directory "$TASK_AWS_WORKSPACE" --cost-inputs "$GITHUB_WORKSPACE/artifacts/cost-inputs.json"
+      - name: Verify retained capacity evidence
+        if: inputs.capacity
+        run: uv run pytest tests/e2e/test_capacity_evidence.py --junitxml=artifacts/capacity.xml
+      - name: Destroy disposable resources
+        if: always() && env.TASK_RUN_ID != ''
+        run: uv run --directory ../django-aws-tasks-example python -m example_tools.deploy_sample destroy --profile verification --region "$AWS_REGION" --run-id "$TASK_RUN_ID" --directory "$TASK_AWS_WORKSPACE"
+      - name: Verify teardown evidence
+        if: always() && env.TASK_RUN_ID != ''
+        run: uv run pytest tests/e2e/test_cleanup.py --junitxml=artifacts/aws-cleanup.xml
+      - name: Bind AWS evidence to the release candidate
+        if: success() && inputs.candidate_artifact != ''
+        run: >-
+          uv run python -m scripts.release_evidence record --candidate candidate/candidate.json --dist candidate/dist
+          --suite aws --report artifacts/aws.xml --report artifacts/aws-cleanup.xml
+          --evidence .aws-runs/current/cleanup.json --evidence .aws-runs/current/identity.json
+          --evidence .aws-runs/current/image.json --evidence .aws-runs/current/deployment.json
+          --output receipts/aws.receipt.json
+      - name: Bind capacity observations to the release candidate
+        if: success() && inputs.candidate_artifact != '' && inputs.capacity
+        run: >-
+          uv run python -m scripts.release_evidence record --candidate candidate/candidate.json --dist candidate/dist
+          --suite capacity --report artifacts/capacity.xml --evidence .aws-runs/current/capacity-summary.json
+          --output receipts/capacity.receipt.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: evidence-aws
+          include-hidden-files: true
+          retention-days: 7
+          path: |
+            receipts/
+            artifacts/*.xml
+            .aws-runs/current/capacity-summary.json
+            .aws-runs/current/image-compatible.json
+            .aws-runs/current/cleanup.json
+            .aws-runs/current/identity.json
+            .aws-runs/current/image.json
+            .aws-runs/current/versions.json
+            .aws-runs/current/deployment.json
+            .aws-runs/current/evidence/
+            .aws-runs/current/terraform/**/terraform.tfstate*
+            .aws-runs/current/restore-*.json

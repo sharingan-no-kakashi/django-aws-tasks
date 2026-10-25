@@ -1,0 +1,21 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<h2>{{ snapshot.name|default:snapshot.id }}</h2>
+<p>Status: <strong>{{ snapshot.status }}</strong>{% if snapshot.business_reference %} · Reference: {{ snapshot.business_reference }}{% endif %}</p>
+{% if can_control %}
+<nav>
+  {% for node in snapshot.nodes %}{% if node.status == "FAILED" %}
+  <a href="{% url admin_namespace|add:':django_tasks_workflows_review' object_id %}?{{ backend_query }}&amp;step={{ node.key }}&amp;action=retry">Retry step {{ node.name|default:node.key }}</a>
+  {% endif %}{% endfor %}
+  <a href="{% url admin_namespace|add:':django_tasks_workflows_review' object_id %}?{{ backend_query }}&amp;action=cancel">Cancel workflow</a>
+</nav>
+{% endif %}
+<table><thead><tr><th>Step</th><th>Status</th><th>Task and attempts</th><th>Parents</th><th>Blocking</th></tr></thead><tbody>
+{% for node in snapshot.nodes %}<tr><td>{{ node.name|default:node.key }}</td><td>{{ node.status }}</td><td>{% if node.task_id %}{% url admin_namespace|add:':django_tasks_aws_taskrecord_change' node.task_id as task_url %}{% if task_url %}<a href="{{ task_url }}?{{ backend_query }}">{{ node.task_id }}</a>{% else %}{{ node.task_id }}{% endif %}{% else %}—{% endif %}</td><td>{{ node.parents|join:", " }}</td><td>{{ node.blocking_reason|default:"—" }}{% if node.error_type %} ({{ node.error_type }}){% endif %}</td></tr>{% endfor %}
+</tbody></table>
+<h3>Recovery history (latest 100)</h3>
+<p>Task details include attempt history and available invocation log links.</p>
+<table><tr><th>Action</th><th>Request</th><th>Original task</th><th>Replacement task</th><th>Time</th></tr>
+{% for action in history %}<tr><td>{{ action.action }}</td><td>{{ action.request_id }}</td><td>{{ action.original_task_id|default:"—" }}</td><td>{{ action.replacement_task_id|default:"—" }}</td><td>{{ action.created_at }}</td></tr>{% endfor %}</table>
+<pre>{{ snapshot_json }}</pre>
+{% endblock %}

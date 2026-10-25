@@ -1,0 +1,140 @@
+name: Publish verified candidate
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_run_id:
+        description: Successful Verify release candidate workflow run ID
+        required: true
+      commit:
+        description: Exact source commit verified by that candidate run
+        required: true
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: publish
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: pypi
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    steps:
+      - name: Require a successful candidate from the trusted main workflow
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          CANDIDATE_RUN_ID: ${{ inputs.candidate_run_id }}
+          CANDIDATE_COMMIT: ${{ inputs.commit }}
+        shell: bash
+        run: |
+          [[ "$CANDIDATE_RUN_ID" =~ ^[0-9]+$ ]]
+          [[ "$CANDIDATE_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          gh api "repos/$GH_REPO/actions/runs/$CANDIDATE_RUN_ID" \
+            | jq -e --arg sha "$CANDIDATE_COMMIT" --arg repo "$GH_REPO" '
+              .status == "completed" and .conclusion == "success" and
+              .path == ".github/workflows/release-candidate.yml" and
+              .event == "workflow_dispatch" and .head_branch == "main" and
+              .head_sha == $sha and .head_repository.full_name == $repo'
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.commit }}
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: verified-release-candidate
+          path: candidate
+          run-id: ${{ inputs.candidate_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: uv sync --locked --all-groups
+      - name: Revalidate the original candidate and receipts without rebuilding
+        run: uv run python -m scripts.release_evidence verify --candidate candidate/candidate.json --dist candidate/dist --receipts candidate/receipts --output candidate/revalidated.json
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
+        with:
+          packages-dir: candidate/dist/
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: publication-candidate
+          path: candidate/
+          if-no-files-found: error
+
+  verify-publication:
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: django_tasks_aws_test
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: django_tasks_aws_test
+      POSTGRES_DSN: postgresql://postgres:postgres@127.0.0.1:5432/django_tasks_aws_test
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.commit }}
+          persist-credentials: false
+      - uses: ./.github/actions/checkout-example
+        env:
+          EXAMPLE_REPOSITORY: ${{ vars.EXAMPLE_REPOSITORY || 'sharingan-no-kakashi/django-aws-tasks-example' }}
+          EXAMPLE_REF: ${{ vars.EXAMPLE_REF || 'main' }}
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: publication-candidate
+          path: candidate
+      - run: uv sync --locked --all-groups
+      - run: uv run playwright install --with-deps chromium
+      - name: Download published bytes and compare hashes
+        run: uv run python -m scripts.verify_published --candidate candidate/candidate.json --destination public-dist
+      - name: Verify public wheel in a clean consumer
+        run: uv run python -m scripts.verify_installed --dist public-dist --artifact wheel --browser --report artifacts/public-wheel.xml
+      - name: Verify public source distribution in a clean consumer
+        run: uv run python -m scripts.verify_installed --dist public-dist --artifact sdist --browser --report artifacts/public-sdist.xml
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: published-candidate-evidence
+          path: |
+            candidate/
+            artifacts/
+
+  github-release:
+    needs: verify-publication
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: published-candidate-evidence
+          path: published
+      - name: Tag the verified commit and retain published distributions
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          version=$(jq -er '.version' published/candidate/candidate.json)
+          commit=$(jq -er '.commit' published/candidate/candidate.json)
+          gh release create "v$version" --repo "$GH_REPO" --target "$commit" \
+            --title "v$version" --generate-notes \
+            published/candidate/dist/* \
+            published/candidate/candidate.json published/candidate/revalidated.json

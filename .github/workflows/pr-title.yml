@@ -1,0 +1,26 @@
+name: PR title
+
+on:
+  merge_group:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  conventional-title:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check Conventional Commit title
+        if: github.event_name == 'pull_request'
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        shell: bash
+        run: |
+          pattern='^(feat|fix|perf|docs|refactor|test|build|ci|chore|revert|style|deps)(\([a-zA-Z0-9_./-]+\))?!?: .+'
+          if [[ ! "$PR_TITLE" =~ $pattern ]]; then
+            echo '::error::Use a Conventional Commit title, for example "fix: handle expired leases".'
+            exit 1
+          fi

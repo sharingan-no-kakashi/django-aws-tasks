@@ -1,0 +1,6 @@
+{% extends "admin/base_site.html" %}
+{% block content %}<p>Counts cover unfinished work; terminal history is excluded.</p>
+{% for worker in workers %}<section><h2>{{ worker.name }} {% if worker.paused %}(paused){% endif %}</h2>
+<p>{{ worker.source_queue_arn }}</p><p>Timeout: {{ worker.timeout_seconds }}s · Lease: {{ worker.lease_seconds }}s · Concurrency: {{ worker.concurrency }}</p>
+<p>Oldest runnable: {{ worker.oldest_due_at|default:"—" }}</p><dl>{% for category, count in worker.counts.items %}<dt>{{ category }}</dt><dd>{{ count }}</dd>{% endfor %}</dl></section>{% endfor %}
+{% endblock %}

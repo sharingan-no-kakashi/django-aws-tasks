@@ -1,0 +1,21 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<h2>Review {{ action }}{% if step_key %} step {{ step_key }}{% endif %}</h2>
+<p>Current status: {{ snapshot.status }}. Eligibility is rechecked under lock on submission.</p>
+<p>{{ preview }}</p>
+{% if action == "retry" %}
+<p>A failed step receives a replacement task preserving its operation key. Skipped descendants
+reopen; successful branches and original task history remain. Cancelled or expired runs cannot recover.</p>
+{% else %}
+<p>Unclaimed steps stop. Running attempts retain their leases and settle before cancellation completes.</p>
+{% endif %}
+<table><tr><th>Step</th><th>Status</th><th>Task identity</th><th>Parents</th></tr>
+{% for node in snapshot.nodes %}<tr><td>{{ node.key }}</td><td>{{ node.status }}</td><td>{{ node.task_id|default:"Unscheduled" }}</td><td>{{ node.parents|join:", " }}</td></tr>{% endfor %}</table>
+<form method="post">
+  {% csrf_token %}
+  <input type="hidden" name="action" value="{{ action }}">
+  <input type="hidden" name="step" value="{{ step_key }}">
+  {{ form.as_p }}
+  <input type="submit" value="Confirm">
+</form>
+{% endblock %}

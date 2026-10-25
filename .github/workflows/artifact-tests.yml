@@ -1,0 +1,61 @@
+name: Installed artifact tests
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  operator-artifacts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.13", "3.14"]
+        artifact: [wheel, sdist]
+        bounds: [latest]
+        include:
+          - python: "3.12"
+            artifact: wheel
+            bounds: minimum
+          - python: "3.12"
+            artifact: sdist
+            bounds: minimum
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: django_tasks_aws_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      POSTGRES_DSN: postgresql://postgres:postgres@127.0.0.1:5432/django_tasks_aws_test
+      REQUIRE_POSTGRES: "1"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: ./.github/actions/checkout-example
+        env:
+          EXAMPLE_REPOSITORY: ${{ vars.EXAMPLE_REPOSITORY || 'sharingan-no-kakashi/django-aws-tasks-example' }}
+          EXAMPLE_REF: ${{ vars.EXAMPLE_REF || 'main' }}
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+      - run: uv sync --locked --all-groups
+      - run: uv build --no-sources
+      - run: uv run --group browser playwright install --with-deps chromium
+      - run: uv python install ${{ matrix.python }}
+      - name: Verify installed distribution and browser
+        env:
+          VERIFY_PYTHON: ${{ matrix.python }}
+          VERIFY_BOUNDS: ${{ matrix.bounds }}
+        run: uv run --group browser pytest tests/artifact/test_install.py::test_installed_${{ matrix.artifact }}_migrations_commands_and_browser --junitxml=artifacts/artifact-gate.xml
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: installed-operator-evidence-${{ matrix.python }}-${{ matrix.artifact }}-${{ matrix.bounds }}
+          path: artifacts/*.xml
+

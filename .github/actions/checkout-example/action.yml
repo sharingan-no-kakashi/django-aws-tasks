@@ -1,0 +1,13 @@
+name: Checkout companion example
+description: Fetch the independent consumer into the sibling path used by local tooling
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        repository: ${{ env.EXAMPLE_REPOSITORY }}
+        ref: ${{ env.EXAMPLE_REF }}
+        path: .example-checkout
+        persist-credentials: false
+    - shell: bash
+      run: mv "$GITHUB_WORKSPACE/.example-checkout" "$GITHUB_WORKSPACE/../django-aws-tasks-example"

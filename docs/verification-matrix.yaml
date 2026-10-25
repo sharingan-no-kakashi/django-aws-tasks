@@ -1,0 +1,831 @@
+# Traceability matrix: stable requirement IDs to tests and evidence.
+# Generated at DT-001. Every design invariant, transition, worker response
+# outcome, and section-18 failure-matrix row receives a stable ID. `test_id`
+# is filled as executable tests land; `null` means the requirement is defined
+# but not yet implemented.
+version: 1
+workflow_version: 1
+status: partially_implemented
+
+requirements:
+  # --- Design §1.2 invariants ---
+  - id: INV-001
+    source: "design §1.2"
+    title: "A rolled-back business transaction creates no executable task"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_enqueue.py::test_outer_rollback_creates_no_task"
+  - id: INV-002
+    source: "design §1.2"
+    title: "Every accepted task remains inspectable"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_inspection.py::test_detail_hides_sensitive_payload_and_error_messages"
+  - id: INV-003
+    source: "design §1.2"
+    title: "One current attempt owns a task"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_process_races.py::test_spawned_workers_cannot_both_claim_current_work"
+  - id: INV-004
+    source: "design §1.2"
+    title: "An obsolete attempt cannot overwrite current task state"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_outcomes.py::test_finalize_with_wrong_token_is_noop"
+  - id: INV-005
+    source: "design §1.2"
+    title: "Delivery duplication does not consume an execution attempt"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_claims.py::test_claim_does_not_increment_attempts_on_duplicate"
+  - id: INV-006
+    source: "design §1.2"
+    title: "A retry cannot start before its due time"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_failure_boundaries.py::test_retry_then_lost_ack_cannot_claim_before_due"
+  - id: INV-007
+    source: "design §1.2"
+    title: "Queue loss does not erase runnable work"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/e2e/test_aws_delivery.py::test_real_scheduler_recovery"
+  - id: INV-008
+    source: "design §1.2"
+    title: "A held or terminal task cannot be restarted by a stale message"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_retention.py::test_late_delivery_acknowledges_retained_terminal_identity"
+  - id: INV-009
+    source: "design §1.2"
+    title: "Retry and dispatch limits survive message replacement"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_reconcile.py::test_hold_delivery_exhausted"
+  - id: INV-010
+    source: "design §1.2"
+    title: "Publication never requires a long database transaction"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_failure_boundaries.py::test_held_inflight_publication_cannot_confirm"
+
+  # --- Design §5 state-machine transitions ---
+  - id: TRN-001
+    source: "design §5"
+    title: "New task to PENDING (producer commits business data and task)"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_enqueue.py::test_commit_creates_task"
+  - id: TRN-002
+    source: "design §5"
+    title: "PENDING to RUNNING (eligible atomic claim)"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_claims.py::test_claim_succeeds_on_due_pending"
+  - id: TRN-003
+    source: "design §5"
+    title: "RUNNING to SUCCESSFUL (owned finalization commits)"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_outcomes.py::test_finalize_success"
+  - id: TRN-004
+    source: "design §5"
+    title: "RUNNING to PENDING (retry scheduled)"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_outcomes.py::test_finalize_retry_schedules_due_time"
+  - id: TRN-005
+    source: "design §5"
+    title: "RUNNING to FAILED (permanent failure or budget exhausted)"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_execution.py::test_transient_failure_is_terminal_on_last_attempt"
+  - id: TRN-006
+    source: "design §5"
+    title: "Expired RUNNING to PENDING (reconciler retry/hold)"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_reconcile.py::test_recover_expired_attempt_retries_when_repeat_safe"
+  - id: TRN-007
+    source: "design §5"
+    title: "Expired RUNNING to FAILED (no attempts remain)"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_reconcile.py::test_recover_expired_attempt_fails_when_budget_exhausted"
+  - id: TRN-008
+    source: "design §5"
+    title: "Unheld PENDING to held PENDING (budget/incompatible/review)"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_worker.py::test_unsupported_version_is_held"
+  - id: TRN-009
+    source: "design §5"
+    title: "Held PENDING to unheld PENDING (operator release)"
+    layer: admin
+    status: implemented
+    test_id:
+      - "tests/integration/test_control.py::test_release_checks_preview_hold_and_preserves_attempt_budget"
+
+  # --- Design §9.2 worker acknowledgment outcomes ---
+  - id: ACK-001
+    source: "design §9.2"
+    title: "Task already successful or failed -> success"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_worker.py::test_terminal_task_acknowledges_without_executing"
+  - id: ACK-002
+    source: "design §9.2"
+    title: "Task is held -> success"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_worker.py::test_held_task_acknowledges"
+  - id: ACK-003
+    source: "design §9.2"
+    title: "Pending task is not due -> success"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_worker.py::test_not_due_task_acknowledges"
+  - id: ACK-004
+    source: "design §9.2"
+    title: "Another attempt holds an unexpired lease -> success"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_failure_boundaries.py::test_duplicate_live_and_expired_leases_ack_without_extra_attempt"
+  - id: ACK-005
+    source: "design §9.2"
+    title: "Lease is expired -> leave to reaper, success"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_failure_boundaries.py::test_duplicate_live_and_expired_leases_ack_without_extra_attempt"
+  - id: ACK-006
+    source: "design §9.2"
+    title: "A competing worker wins the claim -> success"
+    layer: integration
+    status: implemented
+    test_id: "tests/integration/test_failure_boundaries.py::test_losing_claim_acknowledges_without_executing"
+  - id: ACK-007
+    source: "design §9.2"
+    title: "Handler succeeds and finalization commits -> success"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_worker.py::test_due_task_is_claimed_and_executed"
+  - id: ACK-008
+    source: "design §9.2"
+    title: "Handler fails transiently and retry commits -> success"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_failure_boundaries.py::test_committed_business_failure_acknowledges[tests.demo_tasks.fail_transiently-True-PENDING]"
+  - id: ACK-009
+    source: "design §9.2"
+    title: "Handler fails permanently or exhausts budget -> success"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_failure_boundaries.py::test_committed_business_failure_acknowledges[tests.demo_tasks.fail_permanently-False-FAILED]"
+  - id: ACK-010
+    source: "design §9.2"
+    title: "Unsupported handler/payload version -> conditional hold"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_worker.py::test_unsupported_version_is_held"
+  - id: ACK-011
+    source: "design §9.2"
+    title: "Database unavailable/ambiguous commit -> delivery failure"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_failure_boundaries.py::test_ambiguous_claim_commit_never_runs_handler"
+  - id: ACK-012
+    source: "design §9.2"
+    title: "Malformed/unknown-version/wrong-queue -> delivery failure, DLQ"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_worker.py::test_process_record_rejects_malformed_body"
+  - id: ACK-013
+    source: "design §9.2"
+    title: "Envelope refers to no task/tombstone -> delivery failure, DLQ"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_worker.py::test_missing_task_is_delivery_failure"
+
+  # --- Design §18.2 failure matrix (table 1) ---
+  - id: FM-001
+    source: "design §18.2"
+    title: "Roll back business creation"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_enqueue.py::test_outer_rollback_creates_no_task"
+  - id: FM-002
+    source: "design §18.2"
+    title: "Roll back a nested savepoint containing enqueue"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_enqueue.py::test_nested_savepoint_rollback_leaves_outer_intact"
+  - id: FM-003
+    source: "design §18.2"
+    title: "Kill producer after commit, before callback"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/e2e/test_aws_delivery.py::test_real_scheduler_recovery"
+  - id: FM-004
+    source: "design §18.2"
+    title: "Kill publisher after reservation, before send"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_failure_boundaries.py::test_reservation_survives_publisher_death_and_consumes_budget"
+  - id: FM-005
+    source: "design §18.2"
+    title: "Accept SQS send, lose its response"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_dispatch.py::test_publish_lost_response_clears_reservation"
+  - id: FM-006
+    source: "design §18.2"
+    title: "Fail publication metadata commit"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_failure_boundaries.py::test_accepted_send_with_failed_metadata_commit_remains_recoverable"
+  - id: FM-007
+    source: "design §18.2"
+    title: "Let worker claim before publisher records success"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_dispatch.py::test_stale_token_cannot_confirm_after_claim"
+  - id: FM-008
+    source: "design §18.2"
+    title: "Run two publishers simultaneously"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_process_races.py::test_spawned_publishers_reserve_only_one_delivery"
+  - id: FM-009
+    source: "design §18.2"
+    title: "Run two workers simultaneously"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_process_races.py::test_spawned_workers_cannot_both_claim_current_work"
+  - id: FM-010
+    source: "design §18.2"
+    title: "Lose claim commit response"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_failure_boundaries.py::test_ambiguous_claim_commit_never_runs_handler"
+  - id: FM-011
+    source: "design §18.2"
+    title: "Kill worker after claim, before handler"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/e2e/test_aws_termination.py::test_real_termination_and_lease_recovery[after-claim]"
+  - id: FM-012
+    source: "design §18.2"
+    title: "Force hard Lambda timeout or memory failure"
+    layer: e2e
+    status: implemented
+    test_id:
+      - "tests/e2e/test_aws_termination.py::test_real_termination_and_lease_recovery[hard-timeout]"
+      - "tests/e2e/test_aws_termination.py::test_real_termination_and_lease_recovery[out-of-memory]"
+  - id: FM-013
+    source: "design §18.2"
+    title: "Submit stale completion after lease expiry or replacement"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_outcomes.py::test_finalize_after_lease_expiry_is_noop"
+  - id: FM-014
+    source: "design §18.2"
+    title: "Race finalization against reaping"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_process_races.py::test_spawned_finalizer_cannot_overwrite_reaper_after_expiry"
+  - id: FM-015
+    source: "design §18.2"
+    title: "Complete external effect, then fail database finalization"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/e2e/test_aws_termination.py::test_real_termination_and_lease_recovery[after-effect]"
+  - id: FM-016
+    source: "design §18.2"
+    title: "Commit success, lose SQS response"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_failure_boundaries.py::test_success_then_lost_ack_does_not_repeat_effect"
+  - id: FM-017
+    source: "design §18.2"
+    title: "Commit a retry, lose SQS response"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_failure_boundaries.py::test_retry_then_lost_ack_cannot_claim_before_due"
+  - id: FM-018
+    source: "design §18.2"
+    title: "Remove or expire an accepted delivery notification"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_reconcile.py::test_dispatch_due_publishes_pending_work"
+  - id: FM-019
+    source: "design §18.2"
+    title: "Repeatedly fail worker initialization"
+    layer: integration
+    status: implemented
+    test_id: "tests/integration/test_failure_boundaries.py::test_repeated_initialization_failures_exhaust_delivery_not_execution"
+  - id: FM-020
+    source: "design §18.2"
+    title: "Reach logical attempt limit through crashes and failures"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_reconcile.py::test_recover_expired_attempt_fails_when_budget_exhausted"
+  - id: FM-021
+    source: "design §18.2"
+    title: "Hold a task while a publisher is in flight"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_failure_boundaries.py::test_held_inflight_publication_cannot_confirm"
+  - id: FM-022
+    source: "design §18.2"
+    title: "Release a hold twice with the same operator request"
+    layer: admin
+    status: implemented
+    test_id:
+      - "tests/integration/test_control.py::test_repeated_release_cannot_release_later_hold"
+  - id: FM-023
+    source: "design §18.2"
+    title: "Replay twice with the same operator request"
+    layer: admin
+    status: implemented
+    test_id:
+      - "tests/integration/test_control.py::test_concurrent_replay_creates_one_replacement"
+  - id: FM-024
+    source: "design §18.2"
+    title: "Reuse enqueue key with changed arguments"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_enqueue.py::test_changed_work_conflicts"
+  - id: FM-025
+    source: "design §18.2"
+    title: "Publish a task before its scheduled time"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_worker.py::test_not_due_task_acknowledges"
+  - id: FM-026
+    source: "design §18.2"
+    title: "Deliver malformed, wrong-route, or unknown-version envelope"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_worker.py::test_process_record_rejects_wrong_source"
+      - "tests/integration/test_worker.py::test_process_record_rejects_malformed_body"
+      - "tests/integration/test_worker.py::test_wrong_route_delivery_is_rejected"
+  - id: FM-027
+    source: "design §18.2"
+    title: "Fail one message in a multi-record invocation"
+    layer: e2e
+    status: implemented
+    test_id: "tests/e2e/test_aws_acceptance.py::test_multi_record_partial_failure"
+  - id: FM-028
+    source: "design §18.2"
+    title: "Kill an invocation after processing some batch records"
+    layer: e2e
+    status: implemented
+    test_id: "tests/e2e/test_aws_acceptance.py::test_process_death_after_first_batch_record"
+  - id: FM-029
+    source: "design §18.2"
+    title: "Deploy new workers with old queued and held payloads"
+    layer: e2e
+    status: implemented
+    test_id: "tests/e2e/test_aws_acceptance.py::test_old_queued_and_held_work_survives_additive_rollout"
+  - id: FM-030
+    source: "design §18.2"
+    title: "Restore a broken database connection or fail over"
+    layer: e2e
+    status: implemented
+    test_id: "tests/e2e/test_aws_termination.py::test_actual_multi_az_database_failover"
+  - id: FM-031
+    source: "design §18.2"
+    title: "Stop reconciliation"
+    layer: e2e
+    status: implemented
+    test_id: "tests/e2e/test_aws_termination.py::test_stopped_reconciliation_triggers_and_clears_heartbeat_alarm"
+  - id: FM-032
+    source: "design §18.2"
+    title: "Give the reconciler more backlog than its per-run budget"
+    layer: load
+    status: implemented
+    test_id: "tests/integration/test_reconciliation_budget.py::test_backlog_larger_than_sweep_budget_progresses_on_both_routes"
+  - id: FM-033
+    source: "design §18.2"
+    title: "Clean up old diagnostic payloads"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_retention.py::test_redaction_preserves_identity_and_dedupe"
+
+  # --- Design §18.2 deliverable/distribution scenarios (table 2) ---
+  - id: DS-001
+    source: "design §18.2"
+    title: "Serialize a module-level decorated application task"
+    layer: unit
+    status: implemented
+    test_id:
+      - "tests/unit/test_import_paths.py::test_resolve_task_returns_task"
+  - id: DS-002
+    source: "design §18.2"
+    title: "Deserialize that path in a separate worker process/image"
+    layer: artifact
+    status: implemented
+    test_id: "tests/integration/test_process_races.py::test_separate_workers_resolve_and_execute_persisted_import_path"
+  - id: DS-003
+    source: "design §18.2"
+    title: "Import a missing module, missing attribute, or non-Task object"
+    layer: unit
+    status: implemented
+    test_id:
+      - "tests/unit/test_import_paths.py::test_resolve_task_rejects_non_task_object"
+      - "tests/unit/test_import_paths.py::test_resolve_task_rejects_missing_module"
+  - id: DS-004
+    source: "design §18.2"
+    title: "Attempt a disallowed prefix, nested function, or __main__ task"
+    layer: unit
+    status: implemented
+    test_id:
+      - "tests/unit/test_import_paths.py::test_allowlist_rejects_disallowed_prefix"
+  - id: DS-005
+    source: "design §18.2"
+    title: "Resolve the current task import path using the persisted worker route"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_task_resolution.py::test_current_task_path_preserves_recorded_route"
+  - id: DS-006
+    source: "design §18.2"
+    title: "Enqueue one permitted task type to two named worker profiles"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_backend.py::test_route_override_is_honoured"
+  - id: DS-007
+    source: "design §18.2"
+    title: "Override a task's default route while another producer enqueues it"
+    layer: unit
+    status: implemented
+    test_id:
+      - "tests/unit/test_import_paths.py::test_reconstruct_record_task_does_not_mutate_global"
+  - id: DS-008
+    source: "design §18.2"
+    title: "Send a restricted task to an unsuitable worker"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_backend.py::test_restricted_route_is_rejected_by_policy"
+  - id: DS-009
+    source: "design §18.2"
+    title: "Recover or retry work targeted to a non-default worker"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/e2e/test_aws_delivery.py::test_real_scheduler_recovery"
+  - id: DS-010
+    source: "design §18.2"
+    title: "Deliver a task notification to a different worker's source"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_worker.py::test_wrong_route_delivery_is_rejected"
+  - id: DS-011
+    source: "design §18.2"
+    title: "Install the wheel outside the source tree"
+    layer: artifact
+    status: implemented
+    test_id:
+      - "tests/artifact/test_install.py::test_installed_wheel_migrations_commands_and_browser"
+  - id: DS-012
+    source: "design §18.2"
+    title: "Build and install from the source distribution"
+    layer: artifact
+    status: implemented
+    test_id:
+      - "tests/artifact/test_install.py::test_installed_sdist_migrations_commands_and_browser"
+  - id: DS-013
+    source: "design §18.2"
+    title: "Apply each package app's initial migration on a fresh database"
+    layer: artifact
+    status: implemented
+    test_id:
+      - "tests/unit/test_migrations.py::test_initial_migrations_create_current_schema"
+  - id: DS-014
+    source: "design §18.2"
+    title: "Run the sample with editable sources disabled"
+    layer: artifact
+    status: implemented
+    test_id:
+      - "tests/artifact/test_install.py::test_installed_wheel_migrations_commands_and_browser"
+  - id: DS-015
+    source: "design §18.2"
+    title: "Provision the sample solely through the delivered Terraform"
+    layer: terraform
+    status: implemented
+    test_id: "tests/e2e/test_infrastructure.py::test_applied_public_module_matches_live_route_manifest"
+  - id: DS-016
+    source: "design §18.2"
+    title: "Change a timing value or route inconsistently"
+    layer: terraform
+    status: implemented
+    test_id:
+      - "tests/terraform/test_module.py::test_generated_manifest_loads_in_runtime"
+  - id: DS-017
+    source: "design §18.2"
+    title: "Inspect/replay through the admin and CLI"
+    layer: admin
+    status: implemented
+    test_id:
+      - "tests/integration/test_operator_commands.py::test_recovery_command_is_idempotent_and_json_clean"
+      - "tests/integration/test_operator_admin.py::test_review_requires_preview_then_confirmation_and_is_idempotent"
+  - id: DS-018
+    source: "design §18.2"
+    title: "Inspect with read-only staff or issue an unauthorized mutation"
+    layer: admin
+    status: implemented
+    test_id:
+      - "tests/integration/test_operator_admin.py::test_read_only_staff_sees_diagnostics_but_not_sensitive_fields_or_actions"
+  - id: DS-019
+    source: "design §18.2"
+    title: "Double-submit replay/release, or reuse the request with changed intent"
+    layer: admin
+    status: implemented
+    test_id:
+      - "tests/integration/test_control.py::test_changed_intent_conflicts"
+  - id: DS-020
+    source: "design §18.2"
+    title: "Run command dry-runs and JSON/error cases from the installed wheel"
+    layer: admin
+    status: implemented
+    test_id:
+      - "tests/artifact/test_install.py::test_installed_wheel_migrations_commands_and_browser"
+  - id: DS-021
+    source: "design §18.2"
+    title: "Run deployed sample scenarios and tear down the stack"
+    layer: e2e
+    status: implemented
+    test_id: "tests/e2e/test_cleanup.py::test_applied_stack_destroyed_with_retained_evidence"
+
+  # --- Design §0 required deliverables ---
+  - id: DLV-001
+    source: "design §0"
+    title: "Installable backend package"
+    layer: artifact
+    status: implemented
+    test_id:
+      - "tests/artifact/test_install.py::test_installed_wheel_migrations_commands_and_browser"
+  - id: DLV-002
+    source: "design §0"
+    title: "Package-owned worker"
+    layer: artifact
+    status: implemented
+    test_id:
+      - "tests/unit/test_package.py::test_worker_handler_is_importable"
+  - id: DLV-003
+    source: "design §0"
+    title: "Package-owned sweeper"
+    layer: artifact
+    status: implemented
+    test_id:
+      - "tests/unit/test_package.py::test_sweeper_handler_is_importable"
+  - id: DLV-004
+    source: "design §0"
+    title: "Multiple named workers"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/e2e/test_aws_delivery.py::test_real_sqs_routing"
+  - id: DLV-005
+    source: "design §0"
+    title: "Terraform IaC"
+    layer: terraform
+    status: implemented
+    test_id:
+      - "tests/terraform/test_module.py::test_worker_iam_is_scoped_to_its_source"
+  - id: DLV-006
+    source: "design §0"
+    title: "Developer operations"
+    layer: admin
+    status: implemented
+    test_id:
+      - "tests/integration/test_operator_commands.py::test_read_only_commands_do_not_write_or_publish"
+  - id: DLV-007
+    source: "design §0"
+    title: "Consuming sample project"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/e2e/test_aws_delivery.py::test_real_sqs_routing"
+  - id: DLV-008
+    source: "design §0"
+    title: "Automated verification"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_state_machine.py::test_seeded_database_transition_model[20261018]"
+      - "tests/integration/test_hypothesis_lifecycle.py::test_generated_task_lifecycles"
+
+  # --- Workflow extension (workflows.rst) ---
+  - id: WFR-001
+    source: "workflows.rst"
+    title: "Workflow submission is transactional and rolls back with its enclosing transaction"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_workflows.py::test_rollback_creates_no_workflow"
+  - id: WFR-002
+    source: "workflows.rst"
+    title: "A repeated submission key returns the original run; a changed definition conflicts"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_workflows.py::test_duplicate_submission_returns_same_run"
+      - "tests/integration/test_workflows.py::test_changed_definition_conflicts"
+  - id: WFR-003
+    source: "workflows.rst"
+    title: "Cyclic graphs are rejected before acceptance"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_workflows.py::test_cycle_is_rejected"
+  - id: WFR-004
+    source: "workflows.rst"
+    title: "Output references imply dependencies and resolve from parent results"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_workflows.py::test_output_passed_from_parent_to_child"
+      - "tests/integration/test_workflows.py::test_output_dict_path_selection"
+      - "tests/integration/test_workflows.py::test_inferred_dependencies_include_ancestors"
+  - id: WFR-005
+    source: "workflows.rst"
+    title: "Permanent failure or preparation failure skips waiting descendants"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_workflows.py::test_real_execution_terminal_failure_skips_descendant"
+      - "tests/integration/test_workflows.py::test_failed_descendant_is_skipped"
+  - id: WFR-006
+    source: "workflows.rst"
+    title: "Independent branches advance independently"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_workflows.py::test_fan_out_fan_in"
+  - id: WFR-007
+    source: "workflows.rst"
+    title: "A held task blocks its run; release resumes advancement"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_workflows.py::test_held_parent_blocks_descendant"
+      - "tests/integration/test_workflows.py::test_audited_release_unblocks_workflow"
+  - id: WFR-008
+    source: "workflows.rst"
+    title: "Advancement schedules at most the configured batch per pass"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_workflows.py::test_advancement_schedules_across_batches"
+  - id: WFR-009
+    source: "workflows.rst"
+    title: "Competing advancement schedules a child exactly once"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_workflows.py::test_concurrent_advancement_schedules_once"
+  - id: WFR-010
+    source: "workflows.rst"
+    title: "A retired queue or changed task contract records a preparation failure and isolates runs"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_workflows.py::test_retired_queue_records_preparation_failure"
+      - "tests/integration/test_workflows.py::test_changed_takes_context_records_preparation_failure"
+      - "tests/integration/test_workflows.py::test_retired_queue_failure_does_not_block_other_runs"
+  - id: WFR-011
+    source: "workflows.rst"
+    title: "Workflow results and replacement history are protected until workflow details expire"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_workflows.py::test_active_workflow_tasks_are_protected_from_retention"
+      - "tests/integration/test_workflows.py::test_terminal_workflow_tasks_are_protected_until_workflow_redaction"
+  - id: WFR-012
+    source: "workflows.rst"
+    title: "Terminal workflow details are redacted after workflow retention"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_workflows.py::test_workflow_cleanup_redacts_terminal_details"
+  - id: WFR-013
+    source: "workflows.rst"
+    title: "The sweeper recovers a lost completion callback"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_workflows.py::test_sweeper_recovers_lost_completion_callback"
+  - id: WFR-014
+    source: "workflows.rst"
+    title: "A child-scheduling failure rolls back with the submission"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_workflows.py::test_child_scheduling_failure_rolls_back_submission"
+  - id: WFR-015
+    source: "workflows.rst"
+    title: "Audited retry reopens a failed step and its skipped descendants without rerunning parents"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_workflows.py::test_audited_retry_reopens_step_and_descendants"
+      - "tests/integration/test_workflows.py::test_retry_is_idempotent"
+      - "tests/integration/test_workflows.py::test_retry_rejects_expired_parent_results"
+  - id: WFR-016
+    source: "workflows.rst"
+    title: "Uncertain failures require effect review before retry"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_workflows.py::test_retry_uncertain_failure_requires_review"
+  - id: WFR-017
+    source: "workflows.rst"
+    title: "Cancellation stops scheduling, holds pending work, and preserves running leases"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_workflows.py::test_cancel_workflow_marks_unrun_nodes_and_holds_pending"
+      - "tests/integration/test_workflows.py::test_cancel_preserves_running_lease_and_settles_later"
+      - "tests/integration/test_workflows.py::test_cancel_is_idempotent"
+  - id: WFR-018
+    source: "workflows.rst"
+    title: "Display names and business references are presentation metadata, not identity"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_workflows.py::test_display_names_are_presentation_not_identity"
+  - id: WFR-019
+    source: "workflows.rst"
+    title: "Public status and output APIs omit sensitive data and report blocking reasons"
+    layer: integration
+    status: implemented
+    test_id:
+      - "tests/integration/test_workflows.py::test_run_status_reports_progress_and_blocking"
+      - "tests/integration/test_workflows.py::test_node_output_retrieves_successful_result"
+  - id: WFR-020
+    source: "workflows.rst"
+    title: "Operator CLI and admin expose audited retry and cancellation with dry runs"
+    layer: admin
+    status: implemented
+    test_id:
+      - "tests/integration/test_workflow_commands.py::test_workflows_retry_dry_run_safe_and_idempotent"
+      - "tests/integration/test_workflow_commands.py::test_workflows_cancel_dry_run_and_apply"
+      - "tests/integration/test_workflow_admin.py::test_operator_cancels_workflow_via_review"

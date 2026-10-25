@@ -1,0 +1,156 @@
+name: Verify release candidate
+on:
+  workflow_dispatch:
+concurrency:
+  group: release-candidate-${{ github.ref }}
+  cancel-in-progress: false
+permissions:
+  contents: read
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+      - run: uv sync --locked --all-groups
+      - run: uv build --no-sources --out-dir candidate/dist
+      - run: uv run python -m scripts.release_evidence candidate --candidate candidate/candidate.json --dist candidate/dist --output candidate/candidate.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: candidate
+          path: candidate/
+  compatibility:
+    needs: candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.13", "3.14"]
+        postgres: ["15", "16"]
+        bounds: [minimum, latest]
+    services:
+      postgres:
+        image: postgres:${{ matrix.postgres }}
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: django_tasks_aws_test
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      REQUIRE_POSTGRES: "1"
+      POSTGRES_DSN: postgresql://postgres:postgres@127.0.0.1:5432/django_tasks_aws_test
+      POSTGRES_DB: django_tasks_aws_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      VERIFY_PYTHON: ${{ matrix.python }}
+      VERIFY_BOUNDS: ${{ matrix.bounds }}
+      UV_PYTHON: ${{ matrix.python }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: ./.github/actions/checkout-example
+        env:
+          EXAMPLE_REPOSITORY: ${{ vars.EXAMPLE_REPOSITORY || 'sharingan-no-kakashi/django-aws-tasks-example' }}
+          EXAMPLE_REF: ${{ vars.EXAMPLE_REF || 'main' }}
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: candidate
+          path: candidate
+      - run: uv sync --locked --all-groups
+      - run: uv run playwright install --with-deps chromium
+      - run: uv run pytest tests/unit tests/integration --junitxml=artifacts/library.xml
+      - run: uv run --directory ../django-aws-tasks-example pytest -m 'not browser' --junitxml=../django-aws-tasks/artifacts/sample.xml
+      - run: RUN_BROWSER_TESTS=1 uv run --directory ../django-aws-tasks-example pytest -m browser --junitxml=../django-aws-tasks/artifacts/browser.xml
+      - run: mkdir -p dist && cp candidate/dist/* dist/
+      - run: uv run pytest tests/artifact/test_install.py --junitxml=artifacts/artifacts.xml
+      - name: Bind passing results to the candidate
+        run: >-
+          uv run python -m scripts.release_evidence record --candidate candidate/candidate.json
+          --dist candidate/dist --suite python-${{ matrix.python }}-postgres-${{ matrix.postgres }}-${{ matrix.bounds }}
+          --report artifacts/library.xml --report artifacts/sample.xml --report artifacts/browser.xml
+          --report artifacts/artifacts.xml --report artifacts/installed-wheel.xml --report artifacts/installed-sdist.xml
+          --report artifacts/installed-browser.xml
+          --output receipts/python-${{ matrix.python }}-postgres-${{ matrix.postgres }}-${{ matrix.bounds }}.receipt.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: evidence-python-${{ matrix.python }}-postgres-${{ matrix.postgres }}-${{ matrix.bounds }}
+          path: |
+            receipts/
+            artifacts/
+  terraform:
+    needs: candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      RUN_TERRAFORM_TESTS: "1"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: ./.github/actions/checkout-example
+        env:
+          EXAMPLE_REPOSITORY: ${{ vars.EXAMPLE_REPOSITORY || 'sharingan-no-kakashi/django-aws-tasks-example' }}
+          EXAMPLE_REF: ${{ vars.EXAMPLE_REF || 'main' }}
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+        with:
+          terraform_version: "1.15.4"
+          terraform_wrapper: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: candidate
+          path: candidate
+      - run: uv sync --locked --all-groups
+      - run: terraform fmt -check -recursive terraform && terraform fmt -check -recursive ../django-aws-tasks-example/terraform
+      - run: uv run pytest tests/terraform --junitxml=artifacts/terraform.xml
+      - run: terraform -chdir=terraform/modules/task_observability init -backend=false -lockfile=readonly && terraform -chdir=terraform/modules/task_observability test
+      - run: terraform -chdir=../django-aws-tasks-example/terraform/bootstrap init -backend=false -lockfile=readonly && terraform -chdir=../django-aws-tasks-example/terraform/bootstrap validate
+      - run: terraform -chdir=../django-aws-tasks-example/terraform/application init -backend=false -lockfile=readonly && terraform -chdir=../django-aws-tasks-example/terraform/application validate
+      - run: terraform -chdir=../django-aws-tasks-example/terraform/bootstrap test && terraform -chdir=../django-aws-tasks-example/terraform/application test
+      - run: uv run python -m scripts.release_evidence record --candidate candidate/candidate.json --dist candidate/dist --suite terraform --report artifacts/terraform.xml --output receipts/terraform.receipt.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: evidence-terraform
+          path: |
+            receipts/
+            artifacts/
+  aws:
+    needs: candidate
+    if: vars.AWS_VERIFICATION_ROLE != '' && vars.AWS_VERIFICATION_REGION != ''
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/aws-evidence.yml
+    with:
+      region: ${{ vars.AWS_VERIFICATION_REGION }}
+      role_arn: ${{ vars.AWS_VERIFICATION_ROLE }}
+      candidate_artifact: candidate
+      capacity: true
+    secrets: inherit
+  gate:
+    needs: [candidate, compatibility, terraform, aws]
+    if: always() && needs.candidate.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: candidate
+          path: candidate
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: evidence-*
+          path: receipts
+      - run: uv sync --locked --all-groups
+      - name: Require complete fresh evidence for the exact candidate
+        run: uv run python -m scripts.release_evidence verify --candidate candidate/candidate.json --dist candidate/dist --receipts receipts --output candidate/verified.json
+      - name: Include receipts with the candidate for independent revalidation
+        run: cp -R receipts candidate/receipts
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: verified-release-candidate
+          path: candidate/

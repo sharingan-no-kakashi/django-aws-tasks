@@ -1,0 +1,156 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  merge_group:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+        with:
+          enable-cache: true
+      - run: uv sync --locked --all-groups
+      - run: uv run ruff format --check src tests scripts
+      - run: uv run ruff check src tests scripts
+      - run: uv run mypy
+      - run: uv run python scripts/check_traceability.py
+
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+        with:
+          enable-cache: true
+      - run: uv sync --locked --all-groups
+      - run: make audit
+
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+        with:
+          enable-cache: true
+      - run: uv sync --locked --group dev
+      - run: make test-unit PYTEST_ARGS="-ra --junitxml=artifacts/unit.xml"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: unit-test-evidence
+          path: artifacts/unit.xml
+
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+        with:
+          enable-cache: true
+      - run: uv sync --locked --all-groups
+      - run: uv build
+      - name: Inspect wheel contents
+        run: |
+          python - <<'PY'
+          import glob, zipfile
+          wheel = glob.glob("dist/*.whl")[0]
+          names = zipfile.ZipFile(wheel).namelist()
+          assert "django_tasks_aws/__init__.py" in names, names
+          assert any("django_task_aws/prototype" in n for n in names) is False
+          # no editable/workspace path references may leak into the artifact
+          assert all("../django-aws-tasks-example" not in n for n in names)
+          print(f"wheel ok: {wheel}")
+          PY
+
+  monitoring:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+        with:
+          terraform_version: "1.15.4"
+      - run: terraform -chdir=terraform/modules/task_observability fmt -check -recursive
+      - run: terraform -chdir=terraform/modules/task_observability init -backend=false -lockfile=readonly
+      - run: terraform -chdir=terraform/modules/task_observability validate
+      - run: terraform -chdir=terraform/modules/task_observability test
+
+  infrastructure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      RUN_TERRAFORM_TESTS: "1"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: ./.github/actions/checkout-example
+        env:
+          EXAMPLE_REPOSITORY: ${{ vars.EXAMPLE_REPOSITORY || 'sharingan-no-kakashi/django-aws-tasks-example' }}
+          EXAMPLE_REF: ${{ vars.EXAMPLE_REF || 'main' }}
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+        with:
+          terraform_version: "1.15.4"
+          terraform_wrapper: false
+      - run: uv sync --locked --all-groups
+      - run: terraform fmt -check -recursive terraform
+      - run: terraform fmt -check -recursive ../django-aws-tasks-example/terraform
+      - run: uv run pytest tests/terraform -ra --junitxml=artifacts/terraform.xml
+      - run: terraform -chdir=../django-aws-tasks-example/terraform/bootstrap init -backend=false -lockfile=readonly
+      - run: terraform -chdir=../django-aws-tasks-example/terraform/bootstrap validate
+      - run: terraform -chdir=../django-aws-tasks-example/terraform/application init -backend=false -lockfile=readonly
+      - run: terraform -chdir=../django-aws-tasks-example/terraform/application validate
+      - run: terraform -chdir=../django-aws-tasks-example/terraform/bootstrap test
+      - run: terraform -chdir=../django-aws-tasks-example/terraform/application test
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: infrastructure-test-evidence
+          path: artifacts/terraform.xml
+
+  docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+      - run: uv sync --locked --group docs
+      - run: make docs
+
+  workflows:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Validate GitHub Actions workflows
+        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 -color -shellcheck=""
+
+  required:
+    name: CI required
+    if: always()
+    needs: [lint, security, test, build, monitoring, infrastructure, docs, workflows]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require every CI job to pass
+        env:
+          RESULTS: ${{ toJSON(needs.*.result) }}
+        run: |
+          echo "$RESULTS" | jq -e 'all(. == "success")'
