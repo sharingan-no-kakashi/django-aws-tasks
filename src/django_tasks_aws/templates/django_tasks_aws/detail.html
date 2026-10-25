@@ -1,0 +1,31 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<h2>{{ detail.task_name }}</h2><p>Condition: <strong>{{ detail.category }}</strong> · Worker: {{ detail.queue_name }}</p>
+<p>{{ detail.explanation }}</p>
+{% if can_control %}<nav>
+{% if "dispatch" in detail.candidate_actions %}<a href="{% url admin_namespace|add:":django_tasks_aws_review" %}?ids={{ detail.id }}&amp;action=dispatch&amp;backend={{ backend_alias|urlencode }}">Review dispatch</a>{% endif %}
+{% if "release" in detail.candidate_actions %}<a href="{% url admin_namespace|add:":django_tasks_aws_review" %}?ids={{ detail.id }}&amp;action=release&amp;backend={{ backend_alias|urlencode }}">Review hold release</a>{% endif %}
+{% if "replay" in detail.candidate_actions %}<a href="{% url admin_namespace|add:":django_tasks_aws_review" %}?ids={{ detail.id }}&amp;action=replay&amp;backend={{ backend_alias|urlencode }}">Review replay</a>{% endif %}
+{% if "reconcile" in detail.candidate_actions %}<a href="{% url admin_namespace|add:":django_tasks_aws_review" %}?ids={{ detail.id }}&amp;action=reconcile&amp;backend={{ backend_alias|urlencode }}">Review expired recovery</a>{% endif %}
+</nav>{% endif %}
+<h2>Attempts</h2><table><thead><tr><th>Attempt</th><th>Worker</th><th>Outcome</th><th>Logs</th></tr></thead><tbody>
+{% for attempt in detail.attempts %}<tr><td>{{ attempt.attempt_number }}</td><td>{{ attempt.worker_name }}</td><td>{{ attempt.status }} / {{ attempt.outcome }}</td><td>{% if attempt.log_url %}<a href="{{ attempt.log_url }}" target="_blank" rel="noopener noreferrer">CloudWatch logs</a>{% else %}Log metadata unavailable{% endif %}{% if attempt.insights_url %} · <a href="{{ attempt.insights_url }}" target="_blank" rel="noopener noreferrer">Insights</a>{% endif %}</td></tr>{% empty %}<tr><td colspan="4">No retained attempts.</td></tr>{% endfor %}</tbody></table>
+<h2>State, lineage, and audit</h2><pre>{{ detail_json }}</pre>
+
+<h3>Attempt progress</h3>
+{% for attempt in detail.attempts %}
+<p>Attempt {{ attempt.attempt_number }} · {{ attempt.progress_state }} · {{ attempt.progress.stage|default:"Progress" }}
+{% if attempt.progress.completed != None %} {{ attempt.progress.completed }}{% endif %}{% if attempt.progress.total != None %}/{{ attempt.progress.total }}{% endif %}
+{{ attempt.progress.unit }} · {{ attempt.progress_at|default:"No report" }} {{ attempt.progress.message }}</p>
+{% endfor %}
+{% if detail.status == "RUNNING" or detail.status == "PENDING" %}
+<script>
+const progressUrl = new URL(window.location.href);
+const progressPolls = Number(progressUrl.searchParams.get("_poll") || 0);
+if (Number.isFinite(progressPolls) && progressPolls < 30 && !document.hidden) {
+  setTimeout(() => { progressUrl.searchParams.set("_poll", String(progressPolls + 1)); window.location.replace(progressUrl); }, 2000);
+}
+</script>
+{% endif %}
+
+{% endblock %}

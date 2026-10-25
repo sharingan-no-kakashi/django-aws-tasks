@@ -1,0 +1,7 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<p>Recovery preserves the original business operation identity. An accepted request does not confirm that business work completed.</p>
+{% if form %}<form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit">Preview eligibility</button></form>{% endif %}
+{% if rows %}<h2>Per-target results</h2><ul>{% for row in rows %}<li>{{ row.task_id }}: {% if row.task_name %}<strong>{{ row.task_name }}</strong> · Route {{ row.queue_name }} · Current state {{ row.status }} · Operation identity {{ row.operation_key|default:"defined by the handler arguments" }} · Recorded uncertainty {{ row.uncertainty }}{% if row.reset_delivery %} · Explicit delivery-budget reset requested{% endif %}<br>{% endif %}{% if row.error %}{{ row.error }}{% else %}{{ row.action }}{% if row.dry_run %} is eligible{% else %} accepted{% endif %}{% if row.repeated %} (previous request){% endif %}{% if row.replacement_task_id %} · Replacement: <a href="{% url admin_namespace|add:":django_tasks_aws_taskrecord_change" row.replacement_task_id %}">{{ row.replacement_task_id }}</a>{% endif %}{% endif %}</li>{% endfor %}</ul>{% endif %}
+{% if confirmation %}<form method="post">{% csrf_token %}<input type="hidden" name="confirmation" value="{{ confirmation }}"><button type="submit">Confirm reviewed requests</button></form>{% endif %}
+{% endblock %}

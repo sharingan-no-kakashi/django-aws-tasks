@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability privately
+    url: https://github.com/sharingan-no-kakashi/django-aws-tasks/security/advisories/new
+    about: Please do not disclose vulnerabilities in public issues.
+  - name: Read the documentation
+    url: https://github.com/sharingan-no-kakashi/django-aws-tasks/blob/main/README.md
+    about: Start with setup, the sample application, and the operations guide.

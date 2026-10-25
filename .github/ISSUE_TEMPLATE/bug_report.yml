@@ -1,0 +1,34 @@
+name: Bug report
+description: Report a reproducible problem with the backend, tooling, or infrastructure.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For vulnerabilities, use the private reporting link in the issue chooser.
+        Remove credentials, private logs, account IDs, and real task payloads.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe the observed behavior and what you expected.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Minimal code, configuration, and exact steps; synthetic payloads only.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Package version or commit, Python, Django, PostgreSQL, OS, and relevant AWS configuration.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Logs and impact
+      description: Sanitized traceback, frequency, operational impact, and any workaround.

@@ -1,0 +1,22 @@
+name: Feature request
+description: Propose a change to the API, task behavior, tooling, or documentation.
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: Describe the use case and who is affected.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Include an API or operator example if useful.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives and tradeoffs
+      description: Existing workarounds, compatibility, reliability, security, and AWS cost implications.

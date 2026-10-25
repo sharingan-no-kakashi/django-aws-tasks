@@ -1,0 +1,10 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<form method="get"><label>Queue <input name="queue" value="{{ request.GET.queue }}"></label>
+<label>Search <input name="q" value="{{ request.GET.q }}"></label><button>Filter</button></form>
+<table><thead><tr><th>Task</th><th>Condition</th><th>Route</th><th>Attempts</th><th>Hold</th></tr></thead><tbody>
+{% for task in page.tasks %}<tr><td><a href="{% url admin_namespace|add:":django_tasks_aws_taskrecord_change" task.id %}?backend={{ backend_alias|urlencode }}">{{ task.task_name }} · {{ task.id }}</a></td><td>{{ task.category }}</td><td>{{ task.queue_name }}</td><td>{{ task.attempts_started }}/{{ task.max_attempts }}</td><td>{{ task.hold_reason|default:"—" }}</td></tr>
+{% empty %}<tr><td colspan="5">No problem tasks.</td></tr>{% endfor %}
+</tbody></table>
+{% if page.next_offset != None %}<a href="?offset={{ page.next_offset }}&amp;queue={{ request.GET.queue|urlencode }}&amp;q={{ request.GET.q|urlencode }}">Next page</a>{% endif %}
+{% endblock %}

@@ -1,0 +1,113 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "django-tasks-aws"
+version = "0.1.0"
+description = "A serverless Django task system on AWS: SQL databases, SQS, Lambda, leases, and reconciliation."
+readme = "README.md"
+requires-python = ">=3.12,<3.15"
+license = { text = "MIT" }
+authors = [{ name = "Peter" }]
+keywords = ["aws", "django", "lambda", "sqs", "tasks", "postgresql", "mysql", "mariadb", "oracle"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: Django",
+    "Framework :: Django :: 6.1",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Typing :: Typed",
+]
+dependencies = [
+    "aws-lambda-powertools[tracer,parser,datamasking]>=3.35,<4",
+    "boto3>=1.40,<2",
+    "django>=6.1,<7",
+    "pydantic>=2.12,<3",
+    "tenacity>=8.4.2,<10",
+]
+
+[project.optional-dependencies]
+testing = ["pytest>=9.0.3,<10", "pytest-django>=4.11,<5"]
+postgres = ["psycopg[binary]>=3.2.1,<4"]
+mysql = ["mysqlclient>=2.2.7,<3"]
+mariadb = ["mysqlclient>=2.2.7,<3"]
+oracle = ["oracledb>=2.3,<4"]
+
+[project.urls]
+Repository = "https://github.com/sharingan-no-kakashi/django-aws-tasks"
+Issues = "https://github.com/sharingan-no-kakashi/django-aws-tasks/issues"
+Changelog = "https://github.com/sharingan-no-kakashi/django-aws-tasks/blob/main/CHANGELOG.md"
+
+[dependency-groups]
+browser = [
+    "playwright>=1.58,<2",
+]
+docs = [
+    "sphinx>=7.4,<9",
+    "sphinx-rtd-theme>=2.0,<4",
+]
+dev = [
+    "django-stubs[compatible-mypy]>=6.1,<7",
+    "hypothesis>=6.140,<7",
+    "pip-audit>=2.9,<3",
+    "pre-commit>=4.3,<5",
+    "psycopg[binary]>=3.2.1,<4",
+    "pytest>=9.0.3,<10",
+    "pytest-django>=4.11,<5",
+    "pyyaml>=6.0,<7",
+    "ruff>=0.13,<1",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/django_tasks_aws"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests",
+    "/docs",
+    "/scripts",
+    "/README.md",
+    "/CHANGELOG.md",
+    "/CONTRIBUTING.md",
+    "/CODE_OF_CONDUCT.md",
+    "/SECURITY.md",
+    "/LICENSE",
+    "/pyproject.toml",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "SIM", "UP"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "tests.settings"
+pythonpath = ["."]
+testpaths = ["tests/unit"]
+addopts = "--strict-markers"
+markers = ["postgres: requires a real PostgreSQL instance"]
+
+[tool.mypy]
+plugins = ["mypy_django_plugin.main"]
+python_version = "3.12"
+check_untyped_defs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+no_implicit_optional = true
+files = ["src/django_tasks_aws"]
+exclude = ["tests", "examples", "scripts", "docs"]
+
+[tool.django-stubs]
+django_settings_module = "tests.settings"
+
+[[tool.mypy.overrides]]
+module = ["boto3", "botocore", "botocore.*"]
+ignore_missing_imports = true

@@ -1,0 +1,31 @@
+{
+  "maximum_age_hours": 168,
+  "required_suites": [
+    "python-3.12-postgres-15-minimum",
+    "python-3.12-postgres-15-latest",
+    "python-3.12-postgres-16-minimum",
+    "python-3.12-postgres-16-latest",
+    "python-3.13-postgres-15-minimum",
+    "python-3.13-postgres-15-latest",
+    "python-3.13-postgres-16-minimum",
+    "python-3.13-postgres-16-latest",
+    "python-3.14-postgres-15-minimum",
+    "python-3.14-postgres-15-latest",
+    "python-3.14-postgres-16-minimum",
+    "python-3.14-postgres-16-latest",
+    "terraform",
+    "aws",
+    "capacity"
+  ],
+  "required_evidence": {
+    "aws": [
+      "cleanup.json",
+      "image.json",
+      "identity.json",
+      "deployment.json"
+    ],
+    "capacity": [
+      "capacity-summary.json"
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+# Documentation build dependencies (consumed by Read the Docs).
+#
+# Keep in sync with the ``docs`` dependency group in pyproject.toml.
+
+sphinx>=7.4,<9
+sphinx-rtd-theme>=2.0,<4
