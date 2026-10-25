@@ -11,12 +11,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
       - run: uv sync --locked --all-groups
       - run: uv build --no-sources --out-dir candidate/dist
       - run: uv run python -m scripts.release_evidence candidate --candidate candidate/candidate.json --dist candidate/dist --output candidate/candidate.json
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: candidate
           path: candidate/
@@ -49,13 +49,13 @@ jobs:
       VERIFY_BOUNDS: ${{ matrix.bounds }}
       UV_PYTHON: ${{ matrix.python }}
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/checkout-example
         env:
           EXAMPLE_REPOSITORY: ${{ vars.EXAMPLE_REPOSITORY || 'sharingan-no-kakashi/django-aws-tasks-example' }}
           EXAMPLE_REF: ${{ vars.EXAMPLE_REF || 'main' }}
-      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: candidate
           path: candidate
@@ -74,7 +74,7 @@ jobs:
           --report artifacts/artifacts.xml --report artifacts/installed-wheel.xml --report artifacts/installed-sdist.xml
           --report artifacts/installed-browser.xml
           --output receipts/python-${{ matrix.python }}-postgres-${{ matrix.postgres }}-${{ matrix.bounds }}.receipt.json
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: evidence-python-${{ matrix.python }}-postgres-${{ matrix.postgres }}-${{ matrix.bounds }}
@@ -88,17 +88,17 @@ jobs:
     env:
       RUN_TERRAFORM_TESTS: "1"
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/checkout-example
         env:
           EXAMPLE_REPOSITORY: ${{ vars.EXAMPLE_REPOSITORY || 'sharingan-no-kakashi/django-aws-tasks-example' }}
           EXAMPLE_REF: ${{ vars.EXAMPLE_REF || 'main' }}
-      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
-      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
         with:
           terraform_version: "1.15.4"
           terraform_wrapper: false
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: candidate
           path: candidate
@@ -110,7 +110,7 @@ jobs:
       - run: terraform -chdir=../django-aws-tasks-example/terraform/application init -backend=false -lockfile=readonly && terraform -chdir=../django-aws-tasks-example/terraform/application validate
       - run: terraform -chdir=../django-aws-tasks-example/terraform/bootstrap test && terraform -chdir=../django-aws-tasks-example/terraform/application test
       - run: uv run python -m scripts.release_evidence record --candidate candidate/candidate.json --dist candidate/dist --suite terraform --report artifacts/terraform.xml --output receipts/terraform.receipt.json
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: evidence-terraform
           path: |
@@ -135,13 +135,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: candidate
           path: candidate
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: evidence-*
           path: receipts
@@ -150,7 +150,7 @@ jobs:
         run: uv run python -m scripts.release_evidence verify --candidate candidate/candidate.json --dist candidate/dist --receipts receipts --output candidate/verified.json
       - name: Include receipts with the candidate for independent revalidation
         run: cp -R receipts candidate/receipts
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: verified-release-candidate
           path: candidate/
