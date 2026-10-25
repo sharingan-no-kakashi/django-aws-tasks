@@ -67,10 +67,6 @@ def fake_transport():
     return FakeSqsTransport()
 
 
-def pytest_configure(config: pytest.Config) -> None:
-    config.addinivalue_line("markers", "postgres: requires a real PostgreSQL instance")
-
-
 def pytest_collection_modifyitems(
     config: pytest.Config,
     items: list[pytest.Item],

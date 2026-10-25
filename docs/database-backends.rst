@@ -5,8 +5,11 @@ Database backends
 Use ``django_tasks_aws.backends.DatabaseSqsBackend`` with PostgreSQL 15+,
 MySQL 8.4+, MariaDB 10.6+, or Oracle 21c+. The connection selected by ``OPTIONS['database_alias']`` determines
 the adapter. MySQL, MariaDB, and Oracle adapters are **experimental**, not
-release-qualified targets. The integration CI currently covers PostgreSQL 15
-and 16 only; an implemented adapter does not establish verified engine support.
+release-qualified targets. The full integration suite targets PostgreSQL. The manual compatibility workflow
+runs shared real-engine contracts on PostgreSQL 15/16, MySQL 8.4, MariaDB 10.6,
+and Oracle 23 across Python 3.12–3.14. A configured matrix or an implemented
+adapter does not establish verified engine support; passing engine evidence
+must still be reviewed before qualification.
 The entire package remains beta.
 
 Before promoting an experimental engine, run the shared lifecycle, rollback,
@@ -267,7 +270,8 @@ For a fresh deployment, verify the following on the actual engine and driver:
 #. Check that connection limits are restored after success and rollback, including
    reused connections and application-owned outer transactions.
 
-The shared repository integration contracts provide the starting point for
+The shared contracts in ``tests/compatibility`` and the larger PostgreSQL
+integration suite provide the starting point for
 these checks. Successful SQL generation or an isolated driver connection proves
 less than concurrent lifecycle behavior. Preserve this distinction when reporting
 experimental engine results.

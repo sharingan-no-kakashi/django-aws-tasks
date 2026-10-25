@@ -53,48 +53,15 @@ jobs:
         run: uv run python manage.py migrate --noinput
       - name: Sample tests
         working-directory: ../django-aws-tasks-example
-        run: uv run --locked pytest tests/integration -ra -m "not browser" --junitxml=../django-aws-tasks/artifacts/sample.xml
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        if: always()
-        with:
-          name: python-test-evidence-postgres-16
-          path: artifacts/
-
-  operator-browser:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: django_tasks_aws_test
-        ports: ["5432:5432"]
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 5s --health-timeout 5s --health-retries 10
-    env:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: django_tasks_aws_test
-      POSTGRES_HOST: 127.0.0.1
-      RUN_BROWSER_TESTS: "1"
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: ./.github/actions/checkout-example
-        env:
-          EXAMPLE_REPOSITORY: ${{ vars.EXAMPLE_REPOSITORY || 'sharingan-no-kakashi/django-aws-tasks-example' }}
-          EXAMPLE_REF: ${{ vars.EXAMPLE_REF || 'main' }}
-      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
-      - run: uv sync --locked --all-groups
-      - run: uv run --group browser playwright install --with-deps chromium
+        run: uv run --locked pytest sample_app/tests tests --ignore=tests/aws -ra -m 'not browser' --junitxml=../django-aws-tasks/artifacts/sample.xml
+      - run: uv run --locked --group browser playwright install --with-deps chromium
       - name: Browser recovery through the consuming sample
         working-directory: ../django-aws-tasks-example
-        run: uv run --group browser pytest -m browser -ra --junit-prefix=examples.sample_project --junitxml=../django-aws-tasks/artifacts/browser.xml
+        env:
+          RUN_BROWSER_TESTS: "1"
+        run: uv run --locked --group browser pytest sample_app/tests -m browser -ra --junitxml=../django-aws-tasks/artifacts/browser.xml
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
-          name: operator-browser-evidence
-          path: artifacts/browser.xml
-
+          name: postgres-e2e-evidence
+          path: artifacts/
