@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "django-tasks-aws"
-version = "0.1.0"
+version = "0.1.1"
 description = "A serverless Django task system on AWS: SQL databases, SQS, Lambda, leases, and reconciliation."
 readme = "README.md"
 requires-python = ">=3.12,<3.15"
