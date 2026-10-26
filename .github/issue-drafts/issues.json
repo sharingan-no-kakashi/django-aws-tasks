@@ -1,0 +1,34 @@
+[
+  {
+    "title": "Exercise workflow recovery, cancellation, and cleanup races",
+    "body": "Exercise concurrent recovery and abandonment, cancellation/claim serialization, and cleanup/recovery races using independent database connections. Include browser recovery through shared operator services.\n\nAcceptance criteria:\n- Repeated recovery requests retain one audit mutation and reject conflicts.\n- Cancellation cannot start unrun work after hold release.\n- Cleanup preserves parent results and replay lineage while recovery is possible.\n\nSource: docs/archive/development/2026-10/evidence/p1-local-2026-10-23.md (Open acceptance work). Reconcile with current code and existing issues before implementation.\n"
+  },
+  {
+    "title": "Bound whole-operation deadlines and sweep fairness",
+    "body": "Review whole-operation database and transport deadlines across adapters. Exercise slow SQL, delayed transport, and noisy routes using the existing deadline and sweep metrics.\n\nAcceptance criteria:\n- A run stays within its invocation budget, including database waits and callbacks.\n- Slow work cannot starve other routes.\n- Connection timeout settings are restored on success and failure.\n\nSource: docs/archive/development/2026-10/evidence/p1-local-2026-10-23.md (Open acceptance work). Reconcile with current code and existing issues before implementation.\n"
+  },
+  {
+    "title": "Run shared database contracts across the declared engine matrix",
+    "body": "Use the existing compatibility workflow and shared fixtures to exercise supported engine/version/driver combinations. Retain versioned results for lifecycle, rollback, deduplication, claims, fencing, workflow recovery, and connection restoration.\n\nAcceptance criteria:\n- Fresh core/workflow migrations apply on each selected engine.\n- Concurrency uses independent connections or processes.\n- Results identify exact Python, server, driver, and dependency versions.\n\nSource: docs/archive/development/2026-10/evidence/p1-local-2026-10-23.md (Open acceptance work). Reconcile with current code and existing issues before implementation.\n"
+  },
+  {
+    "title": "Verify consumer images with native database drivers",
+    "body": "Build consumer images from locked requirements for the experimental engine extras and exercise settings, secret precedence, TLS, and supplied-database connectivity.\n\nAcceptance criteria:\n- Images identify immutable digests and hashed dependency inputs.\n- Native-driver imports and application task execution work inside each image.\n- Configuration and secret refresh behavior are covered without exposing credentials.\n\nSource: docs/archive/development/2026-10/evidence/p1-local-2026-10-23.md (Open acceptance work). Reconcile with current code and existing issues before implementation.\n"
+  },
+  {
+    "title": "Exercise installed artifact, upgrade, and browser compatibility",
+    "body": "Run the existing installed-artifact checks across declared Python, driver, and minimum/latest dependency combinations. Include workflows enabled/disabled, package assets, and the browser operator journey.\n\nAcceptance criteria:\n- Wheel and sdist run outside the source checkout.\n- Queued/held work survives the supported additive rollout and rollback scenario.\n- Reports identify artifact hashes and exact dependencies.\n\nSource: docs/archive/development/2026-10/evidence/p1-local-2026-10-23.md (Open acceptance work). Reconcile with current code and existing issues before implementation.\n"
+  },
+  {
+    "title": "Run disposable service integration and operator drills",
+    "body": "Use the example tooling in an explicitly selected disposable account for queue routing, scheduled recovery, forced termination, initialization failure/DLQ/hold, provider response loss, database disruption, and rollout/rollback exercises.\n\nAcceptance criteria:\n- Verify durable task and business outcomes, not just invocation success.\n- Check permissions, log navigation, credential refresh, and delivered alarm notifications.\n- Record resource identities and confirm cleanup.\n\nSource: docs/archive/development/2026-10/evidence/p1-local-2026-10-23.md (Open acceptance work). Reconcile with current code and existing issues before implementation.\n"
+  },
+  {
+    "title": "Measure workload capacity and regional usage costs",
+    "body": "Use the example workload and capacity tools to measure burst, sustained, and outage recovery behavior at the declared concurrency budgets.\n\nAcceptance criteria:\n- Retain latency, outcomes, queue/backlog, database sessions, and wait series.\n- Apply explicit success thresholds to each workload class.\n- Retain sourced, dated regional pricing and observed usage inputs.\n\nSource: docs/archive/development/2026-10/evidence/p1-local-2026-10-23.md (Open acceptance work). Reconcile with current code and existing issues before implementation.\n"
+  },
+  {
+    "title": "Rehearse maintainer setup and exact-artifact release workflow",
+    "body": "Review branch protections, required checks, protected environments, and OIDC configuration using the maintainer guides. Rehearse candidate verification and a clean developer installation journey.\n\nAcceptance criteria:\n- Candidate reports identify the same source and wheel/sdist hashes.\n- Verify install, migrate, both routes, diagnosis, recovery, and cleanup from written instructions.\n- Keep publication a separate action; do not expand this personal prototype into a production support commitment.\n\nSource: docs/archive/development/2026-10/evidence/p1-local-2026-10-23.md (Open acceptance work). Reconcile with current code and existing issues before implementation.\n"
+  }
+]

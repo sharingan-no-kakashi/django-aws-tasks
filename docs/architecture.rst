@@ -110,9 +110,8 @@ The diagram uses official `AWS Architecture Icons
 editable source; icon provenance is recorded alongside it in
 ``_static/task-system-design.md``.
 
-The repository's ``docs/implementation-spec.md`` records the frozen first-release
-contract, scope, and requirement-ID scheme. The optional workflow layer described
-in :doc:`workflows` coordinates dependencies through this same execution model.
+The optional workflow layer described in :doc:`workflows` coordinates
+dependencies through this same execution model.
 
 Failure windows and their recovery
 ==================================

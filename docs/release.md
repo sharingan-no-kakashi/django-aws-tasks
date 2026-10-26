@@ -21,7 +21,7 @@ missing suites, skipped/failed mandatory tests, and changed distribution bytes.
 The source digest includes the sample, infrastructure, docs, tests, and workflows.
 A changed candidate must be verified again.
 
-For a local dry candidate (not a successful release gate):
+To create a local candidate:
 
 ```sh
 uv build --no-sources --out-dir /tmp/task-candidate/dist
@@ -40,9 +40,7 @@ uv run python -m scripts.release_evidence record \
 ```
 
 A local receipt cannot substitute for a different CI candidate's evidence.
-The strict gate remains expected to fail until every required suite and external
-acceptance result exists. Test names alone do not establish the correctness of
-an assertion; review the acceptance matrix and retained observations too.
+Review the acceptance matrix and retained observations alongside the suite reports.
 
 ## Capacity and regional cost evidence
 
@@ -80,8 +78,8 @@ workflow's short-lived identity; no persistent PyPI token is required.
 
 After publication, tag the matching revision, retain release notes and the
 manifest, download the public artifacts, compare hashes, and repeat the installed
-consumer smoke checks. Availability of a package name and successful publication
-are not claimed until those distinct external steps have completed.
+consumer smoke checks. Use the resulting public artifacts and release tag when
+announcing a version.
 
 ## Maintainer sequence
 

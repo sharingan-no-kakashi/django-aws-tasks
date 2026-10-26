@@ -1,7 +1,7 @@
 # Implementation and acceptance status
 
-The latest working-tree audit and all remaining tasks are in the single
-[consolidated backlog](../todo-task.md), updated 23 October 2026. That audit
+The working-tree audit at the time and its tasks were recorded in the
+[consolidated backlog](../../backlogs/2026-10-23/todo-task.md), updated 23 October 2026. That audit
 observed 351 passing library tests, 33 passing non-browser sample tests, and
 clean mypy/lint checks. The subsequent P1 pass registers the versioned WFR
 set, restores inventory/format checks, and adds recovery identity, cancellation,
@@ -41,8 +41,8 @@ and latest supported dependency cases. Merely defining those jobs is not evidenc
 that every matrix cell has passed. The current working tree is beta. Release qualification still requires the
 candidate gate to succeed. Publishing remains a distinct action.
 
-See [backend reference](backend-reference.md), [operations](operations.md),
-[release procedure](release.md), and the [AWS sample guide](../../django-aws-tasks-example/terraform/README.md).
+See [backend reference](../../../backend-reference.md), [operations](../../../operations.md),
+[release procedure](../../../release.md), and the [AWS sample guide](../../../example-repository.md).
 
 ## Local verification after the fixes
 

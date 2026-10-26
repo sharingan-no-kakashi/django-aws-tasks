@@ -1,6 +1,7 @@
 # Standalone consumer repository
 
-The runnable consumer moved to `../django-aws-tasks-example`. It owns its Django
+The runnable consumer is a separate `django-aws-tasks-example` checkout. For local
+development, place it at `../django-aws-tasks-example`. It owns its Django
 application, dependencies, runtime lock, sample tests, LocalStack E2E provisioner,
 and AWS deployment/test commands. LocalStack configuration, fixtures, and runners
 exist only in the consumer repository. The library keeps reusable runtime code,
@@ -15,13 +16,8 @@ accept `TASK_EXAMPLE_ROOT`.
 
 Library CI still checks consumer compatibility. Set `EXAMPLE_REPOSITORY` to the
 published GitHub repository and optionally `EXAMPLE_REF` to the consumer revision.
-The default is `sharingan-no-kakashi/django-aws-tasks-example` at `main`; the new
-repository must be published before those jobs can fetch it. Consumer CI has
-matching `LIBRARY_REPOSITORY` and `LIBRARY_REF` settings. No repository has been
-published by this local migration.
-
-The existing backlog and historical evidence describe the original tree. Moving
-code does not establish new AWS acceptance evidence or satisfy outstanding gates.
+The default is `sharingan-no-kakashi/django-aws-tasks-example` at `main`.
+Consumer CI has matching `LIBRARY_REPOSITORY` and `LIBRARY_REF` settings.
 
 The library’s `scripts/` contains only traceability, release receipts, distribution
 verification, and the companion-checkout locator. Consumer deployment, AWS fault

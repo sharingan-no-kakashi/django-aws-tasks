@@ -93,6 +93,7 @@ intersphinx_mapping = {
 templates_path = ["_templates"]
 exclude_patterns = [
     "_build",
+    "archive/**",
     "Thumbs.db",
     ".DS_Store",
     # Existing Markdown notes live outside the Sphinx toctree; they are linked

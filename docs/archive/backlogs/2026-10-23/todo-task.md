@@ -15,13 +15,12 @@ tags:
 draft: true
 ---
 
-> Historical snapshot, archived 23 October 2026. The only active backlog is
-> [todo-task.md](../../../../todo-task.md). Checkboxes below preserve the original plan.
+> Historical snapshot. Checkboxes preserve the original plan; current work belongs in GitHub Issues.
 
 
 # Django Tasks on AWS: Implementation Backlog
 
-Current implementation/evidence status: [docs/acceptance-status.md](../../../../docs/acceptance-status.md).
+Current implementation/evidence status: [docs/acceptance-status.md](../../development/2026-10/acceptance-status.md).
 The optional workflow extension has a separate [improvement backlog](todo-workflows.md).
 Additional developer experience and product features have a separate
 [feature backlog](todo-features.md).

@@ -4,18 +4,10 @@ Database backends
 
 Use ``django_tasks_aws.backends.DatabaseSqsBackend`` with PostgreSQL 15+,
 MySQL 8.4+, MariaDB 10.6+, or Oracle 21c+. The connection selected by ``OPTIONS['database_alias']`` determines
-the adapter. MySQL, MariaDB, and Oracle adapters are **experimental**, not
-release-qualified targets. The full integration suite targets PostgreSQL. The manual compatibility workflow
-runs shared real-engine contracts on PostgreSQL 15/16, MySQL 8.4, MariaDB 10.6,
-and Oracle 23 across Python 3.12–3.14. A configured matrix or an implemented
-adapter does not establish verified engine support; passing engine evidence
-must still be reviewed before qualification.
-The entire package remains beta.
-
-Before promoting an experimental engine, run the shared lifecycle, rollback,
-submission deduplication, lease fencing, competing-worker, and workflow recovery
-contracts on that real engine, including fresh migrations and connection-limit
-restoration after failure. Mocked SQL checks do not replace this evidence.
+the adapter. PostgreSQL is the primary integration target. MySQL, MariaDB,
+and Oracle adapters are experimental. The package is a personal prototype;
+do not use it as a production system. See :doc:`testing` for suite commands
+and recorded verification results.
 
 Producers, workers, and the sweeper must use the same writable
 primary and schema. SQLite is not a coordination backend.

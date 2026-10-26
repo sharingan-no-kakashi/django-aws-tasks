@@ -20,9 +20,8 @@ features rather than afterthoughts.
 
 .. warning::
 
-   **Status: beta.** The backend, coordination services, Lambda adapters,
-   and local sample/operator tooling are implemented. AWS deployment and release
-   evidence remain incomplete. No AWS deployment is claimed.
+   This is a prototype built for personal use in connection with a blog post.
+   Do not use it as a production system.
 
 .. toctree::
    :maxdepth: 2
@@ -35,6 +34,8 @@ features rather than afterthoughts.
    workflows
    database-backends
    operations
+   troubleshooting
+   testing
    release
 
 .. toctree::
@@ -68,12 +69,8 @@ Quick reference
    * - Django
      - ``>=6.1,<7``
    * - Database
-     - PostgreSQL 15+ release target; experimental MySQL 8.4+, MariaDB 10.6+,
+     - PostgreSQL 15+; experimental MySQL 8.4+, MariaDB 10.6+,
        Oracle 21c+ adapters (writable primary)
-
-The repository's ``docs/implementation-spec.md`` records the frozen first-release
-contract. Development notes and acceptance reports are supporting evidence;
-the guides below explain how to use the implemented interfaces.
 
 Where to begin
 ==============
@@ -87,12 +84,13 @@ on what that system can identify and confirm.
 Use :doc:`configuration` when connecting your application's settings to its
 infrastructure. :doc:`database-backends` explains the database guarantees behind
 those settings and distinguishes implemented experimental adapters from the
-PostgreSQL release target. :doc:`workflows` adds static dependencies between
+PostgreSQL adapter. :doc:`workflows` adds static dependencies between
 ordinary tasks after the basic task path works.
 
 Operators should start with :doc:`operations`, especially the distinction
-between releasing a hold and replaying terminal work. Maintainers should use
-:doc:`release` to understand which verification evidence is still required.
+between releasing a hold and replaying terminal work. Use :doc:`troubleshooting`
+for common setup and execution problems,
+:doc:`testing` for checks, and :doc:`release` for version and release information.
 The :doc:`api/index` supplies function and type details for integrations.
 
 What acceptance guarantees

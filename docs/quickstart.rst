@@ -9,11 +9,12 @@ settings, and :doc:`architecture` for the delivery and recovery model.
 Runnable example
 ================
 
-The standalone `django-aws-tasks-example repository
-<https://github.com/sharingan-no-kakashi/django-aws-tasks-example>`_ contains a
+The standalone ``django-aws-tasks-example`` companion checkout contains a
 Django application with a web UI, database containers, local AWS emulation,
 Lambda image builds, and deployment tooling. Follow that repository's README
-for setup, development, tests, and teardown. Run its commands from its checkout;
+for setup, development, tests, and teardown. See the
+:download:`example setup notes <example-repository.md>` for checkout conventions.
+Run its commands from its checkout;
 the library Makefile provides library maintenance commands only.
 
 The library supplies reusable infrastructure in ``terraform/modules/``. The

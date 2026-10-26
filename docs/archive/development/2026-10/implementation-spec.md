@@ -1,10 +1,10 @@
 # django-tasks-aws: Implementation Specification (v1)
 
 > Status: **frozen contract (DT-001)**. This is the versioned, distilled contract
-> derived from [`../Django tasks design.md`](../Django tasks design.md). The full
+> derived from [`../Django tasks design.md`](../../../architecture.rst). The full
 > design remains the normative protocol reference; this file fixes the decisions
 > the first release must not silently change. Requirement IDs resolve in
-> [`verification-matrix.yaml`](verification-matrix.yaml).
+> [`verification-matrix.yaml`](../../../verification-matrix.yaml).
 
 ## 1. Naming
 
@@ -30,7 +30,7 @@ Support targets for the first release (full matrix evidence is still required):
   `TaskResultStatus`, `BaseTaskBackend`, `TaskContext`, `.using(...)`).
 - **PostgreSQL** 15+, **MySQL** 8.4+, **MariaDB** 10.6+, or **Oracle** 21c+
   on a writable primary. MySQL/MariaDB require InnoDB.
-  Shared ORM coordination uses engine adapters; see [database backends](database-backends.rst).
+  Shared ORM coordination uses engine adapters; see [database backends](../../../database-backends.rst).
   The existing CI suite remains PostgreSQL-based. SQLite may be used for unit
   tests only, never as evidence of locking behavior.
 - **AWS** standard SQS (not FIFO), Lambda (Python runtime), EventBridge
@@ -106,7 +106,7 @@ TASKS = {
 
 ## 7. Requirement ID scheme
 
-Stable IDs are assigned in [`verification-matrix.yaml`](verification-matrix.yaml):
+Stable IDs are assigned in [`verification-matrix.yaml`](../../../verification-matrix.yaml):
 
 | Prefix | Scope                                            |
 | ------ | ------------------------------------------------ |
@@ -139,7 +139,7 @@ All three assignments still require actual AWS results before release.
 
 `django_tasks_aws.workflows` is an optional orchestration layer over the core
 backend. It is not part of the initial execution contract in section 3; its
-versioned contract lives in [`workflows.rst`](workflows.rst) and its requirements
+versioned contract lives in [`workflows.rst`](../../../workflows.rst) and its requirements
 carry the `WFR` prefix in the verification matrix.
 
 - **Scope.** Static graphs whose steps are known at submission time. Dynamic

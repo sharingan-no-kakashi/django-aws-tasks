@@ -6,7 +6,7 @@ TEST_DATABASE ?= postgres
 PYTHON_PATHS := src tests scripts docs/conf.py
 
 .PHONY: help setup sync check lint format format-check traceability typecheck \
-        test test-unit test-postgres test-e2e test-compatibility build docs audit clean hooks
+        test test-unit test-postgres test-e2e test-compatibility build docs docs-links docs-linkcheck audit clean hooks
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*## "; printf "Usage: make <target> [UV=uv] [PYTEST_ARGS=\"...\"]\n\n"} /^[a-zA-Z0-9_-]+:.*## / {printf "  %-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -19,7 +19,7 @@ hooks: ## Install Conventional Commit and pre-push quality hooks
 sync: ## Synchronize dependencies from uv.lock
 	$(UV) sync --locked --all-groups
 
-check: format-check traceability typecheck ## Check formatting, lint, type annotations, and requirement assignments
+check: format-check traceability typecheck docs-links ## Check formatting, lint, types, requirement assignments, and documentation links
 
 lint: ## Lint Python code with Ruff
 	$(UV) run ruff check $(PYTHON_PATHS)
@@ -56,7 +56,13 @@ test-compatibility: ## Run shared contracts on TEST_DATABASE (default: postgres)
 build: ## Build wheel and source distributions into dist/
 	$(UV) build
 
-docs: ## Build Sphinx HTML docs; fail on warnings
+docs-links: ## Check repository documentation links and Markdown anchors
+	$(UV) run python scripts/check_docs_links.py
+
+docs-linkcheck: docs-links ## Check external links in the Sphinx guides
+	$(UV) run --group docs sphinx-build -b linkcheck docs docs/_build/linkcheck -W --keep-going
+
+docs: docs-links ## Build Sphinx HTML docs; fail on warnings
 	$(UV) run --group docs sphinx-build -b html docs docs/_build/html -W --keep-going
 
 audit: ## Audit locked library and development dependencies for known vulnerabilities

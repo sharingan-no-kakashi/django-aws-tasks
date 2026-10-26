@@ -225,8 +225,8 @@ business work still requires an audited replay.
 
 After deployment, retain actual alarm state transitions and log navigation
 results for stopped-sweeper, broken-initialization, and held-backlog drills.
-Mocked provider plan tests do not establish that alarms fire in AWS. Phase F's
-DT-036/DT-037 deployed acceptance remains open until that evidence exists.
+Use alarm drills to check firing, clearing, and delivery to the configured
+notification destination. Retain the drill observations with the incident runbook.
 
 ## Corrupt history and invariant review
 

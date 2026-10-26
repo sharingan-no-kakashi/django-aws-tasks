@@ -6,8 +6,8 @@ application tasks in every producer and worker artifact. PostgreSQL 15+, MySQL 8
 SQLite is not a coordination backend. See [database adapters](database-backends.rst)
 for configuration, identifier limits, and upgrade instructions. PostgreSQL 15
 and 16 are covered by integration CI. MySQL, MariaDB, and Oracle adapters are
-experimental pending equivalent real-engine contract verification; they are not
-release-qualified targets. The package remains beta on every engine.
+experimental. This is a personal prototype; do not use it in production. See the
+[testing guide](testing.rst) for checks and recorded results.
 
 Task acceptance saves the `takes_context` execution contract. Workers hold work
 as `incompatible_payload` before calling the handler if the saved contract is

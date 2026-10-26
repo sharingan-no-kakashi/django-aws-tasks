@@ -1,5 +1,4 @@
-> Historical snapshot, archived 23 October 2026. The only active backlog is
-> [todo-task.md](../../../../todo-task.md). Checkboxes below preserve the original plan.
+> Historical snapshot. Checkboxes preserve the original plan; current work belongs in GitHub Issues.
 
 # Developer experience and feature backlog
 

@@ -1,10 +1,10 @@
 > Historical review notice: findings describe the tree at review time.
-> The active [backlog](../todo-task.md) records subsequent P1 fixes and remaining evidence.
+> The historical [backlog](../../backlogs/2026-10-23/todo-task.md) records subsequent P1 fixes and remaining evidence.
 
 # Design implementation review — 19 October 2026
 
 > Historical review. The follow-up implementation and outstanding external
-> acceptance are tracked in the single [consolidated backlog](../todo-task.md),
+> acceptance are tracked in the single [consolidated backlog](../../backlogs/2026-10-23/todo-task.md),
 > with context in [acceptance-status.md](acceptance-status.md).
 
 ## Assessment

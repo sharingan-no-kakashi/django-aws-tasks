@@ -16,9 +16,9 @@ Requirements
 
 .. note::
 
-   PostgreSQL is the release qualification target. MySQL, MariaDB, and Oracle
-   adapters are implemented experimental paths; see :doc:`database-backends`
-   for their evidence requirements. The package remains beta.
+   This is a personal prototype; do not use it in production. PostgreSQL is
+   the primary integration target. MySQL, MariaDB, and Oracle adapters are
+   experimental; see :doc:`database-backends`.
 
 Install
 =======

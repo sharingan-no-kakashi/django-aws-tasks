@@ -1,12 +1,11 @@
-> Historical snapshot, archived 23 October 2026. The only active backlog is
-> [todo-task.md](../../../../todo-task.md). Checkboxes below preserve the original plan.
+> Historical snapshot. Checkboxes preserve the original plan; current work belongs in GitHub Issues.
 
 # Workflow improvement backlog
 
 Updated 23 October 2026. This backlog covers the optional
 `django_tasks_aws.workflows` app and complements the core
 [implementation backlog](todo-task.md). The current API and behaviour are
-documented in [the workflow guide](../../../../docs/workflows.rst).
+documented in [the workflow guide](../../../workflows.rst).
 General developer experience and product additions are tracked in the
 [feature backlog](todo-features.md).
 Workflow execution through emulated AWS services is planned in the
