@@ -36,7 +36,7 @@ testing = ["pytest>=9.0.3,<10", "pytest-django>=4.11,<5"]
 postgres = ["psycopg[binary]>=3.2.1,<4"]
 mysql = ["mysqlclient>=2.2.7,<3"]
 mariadb = ["mysqlclient>=2.2.7,<3"]
-oracle = ["oracledb>=2.3,<4"]
+oracle = ["oracledb>=2.3,<27"]
 
 [project.urls]
 Repository = "https://github.com/sharingan-no-kakashi/django-aws-tasks"
@@ -48,7 +48,7 @@ browser = [
     "playwright>=1.58,<2",
 ]
 docs = [
-    "sphinx>=7.4,<9",
+    "sphinx>=7.4,<10",
     "sphinx-rtd-theme>=2.0,<4",
 ]
 dev = [
